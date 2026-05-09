@@ -11,10 +11,13 @@ export default defineConfig({
     }),
     tailwindcss(),
   ],
+<<<<<<< HEAD
+=======
   define: {
     global: 'globalThis',
   },
   optimizeDeps: {
     include: ['@stomp/stompjs', 'sockjs-client'],
   },
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 })

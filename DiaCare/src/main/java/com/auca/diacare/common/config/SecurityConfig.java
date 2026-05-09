@@ -95,11 +95,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/**",
+<<<<<<< HEAD
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+=======
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/ws/**",
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
                                 "/error")
                         .permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
@@ -111,7 +117,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/glucose/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
                         .requestMatchers("/api/v1/metrics/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
                         .requestMatchers("/api/v1/meal-plans/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+<<<<<<< HEAD
+=======
                         .requestMatchers("/api/v1/chat/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint())

@@ -2,6 +2,8 @@
 
 This document summarizes the Dockerization process, the version control setup, and a software test plan for the DiaCare application.
 
+<<<<<<< HEAD
+=======
 ## Reference Organization
 
 The reference organization for this project is Rwanda Diabetics Association. DiaCare is designed as a prototype digital diabetes care platform that can support an organization responsible for diabetes awareness, patient follow-up, doctor coordination, appointment support, and emergency communication. The features in this system are therefore aligned with the needs of patients living with diabetes, healthcare professionals, and administrative staff who coordinate care.
@@ -21,6 +23,7 @@ Rwanda Diabetics Association can use a system like DiaCare to:
 
 The root `README.md` contains the submission-ready diagrams for this project, including architecture, component, use case, class, entity relationship, backend layer, sequence, activity, and deployment diagrams. These diagrams are written in Mermaid syntax so they render directly on GitHub and in many Markdown viewers.
 
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 ## PHASE 2. Software Development Prototype
 
 The DiaCare prototype is an early working version of a diabetes care management system built to validate the main idea before full deployment. The prototype focuses on the core workflows that matter most:
@@ -32,7 +35,10 @@ The DiaCare prototype is an early working version of a diabetes care management 
 - prescriptions and meal plans
 - notifications
 - dashboards and reports
+<<<<<<< HEAD
+=======
 - real-time chat with emergency (SOS) escalation
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### Prototype Purpose
 
@@ -59,11 +65,16 @@ The implementation follows common Java and React best practices:
 - environment-based configuration instead of hardcoding secrets
 - component-based frontend design
 - API communication through a single axios client
+<<<<<<< HEAD
+
+### Design Pattern Used
+=======
 - response DTOs used at the service boundary to prevent lazy-loading serialization errors
 
 ### Design Patterns Used
 
 #### Repository Pattern
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 The main design pattern used in the project is the `Repository Pattern`.
 
@@ -78,6 +89,16 @@ This pattern appears throughout the backend through interfaces such as:
 - `NotificationRepository`
 - `HealthMetricsRepository`
 - `GlucoseReadingRepository`
+<<<<<<< HEAD
+
+#### How the pattern is used
+
+- Controllers call services.
+- Services call repositories.
+- Repositories handle database access through Spring Data JPA.
+
+This keeps database logic separate from business logic and makes the application easier to maintain and test.
+=======
 - `ConversationRepository`
 - `ChatMessageRepository`
 
@@ -86,6 +107,7 @@ Controllers call services. Services call repositories. Repositories handle datab
 #### Observer Pattern (WebSocket Messaging)
 
 The real-time chat module uses an observer-style pattern through Spring's STOMP message broker. When a message is sent, the server pushes it to all subscribed clients without them needing to poll. The `SimpMessagingTemplate` acts as the publisher and each connected browser session acts as a subscriber on `/user/queue/messages`.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### Why This Prototype Is Useful
 
@@ -93,6 +115,8 @@ The real-time chat module uses an observer-style pattern through Spring's STOMP 
 - It reduces risk before full-scale deployment.
 - It gives a solid foundation for testing, Dockerization, and future improvement.
 
+<<<<<<< HEAD
+=======
 ---
 
 ## PHASE 3. Real-Time Chat Module
@@ -244,6 +268,7 @@ The chat UI follows a WhatsApp-style layout:
 
 ---
 
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 ## 1. Brief Process To Dockerize An Application
 
 Dockerizing an application means packaging the application code, runtime, and dependencies into containers so the application runs the same way in different environments.
@@ -296,8 +321,11 @@ After startup:
 - Open the frontend at `http://localhost:5173`
 - Swagger UI is available at `http://localhost:8085/swagger-ui.html`
 
+<<<<<<< HEAD
+=======
 ---
 
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 ## 2. Version Control System Setup
 
 This project is managed with Git, which is a distributed version control system. Git keeps track of code changes, makes collaboration easier, and allows the project to be restored to earlier versions when needed.
@@ -341,13 +369,21 @@ Large generated or machine-specific files should be ignored, including:
 5. Push the repository to a remote server such as GitHub or GitLab.
 6. Continue working with feature branches for future improvements.
 
+<<<<<<< HEAD
+If your lecturer specifically expects SVN terminology, the same idea still applies: source files, configuration, and documentation are versioned, while generated files are excluded.
+=======
 ---
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ## 3. Software Test Plan
 
 ### 3.1 Test Plan Objective
 
+<<<<<<< HEAD
+The purpose of the test plan is to verify that DiaCare behaves correctly across authentication, patient management, doctor workflows, glucose tracking, appointments, prescriptions, notifications, and deployment in Docker containers.
+=======
 The purpose of the test plan is to verify that DiaCare behaves correctly across authentication, patient management, doctor workflows, glucose tracking, appointments, prescriptions, notifications, real-time chat, and deployment in Docker containers.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### 3.2 Test Items
 
@@ -358,9 +394,12 @@ The purpose of the test plan is to verify that DiaCare behaves correctly across 
 - Appointment booking, rescheduling, and cancellation
 - Prescription and meal-plan retrieval
 - Notification creation and retrieval
+<<<<<<< HEAD
+=======
 - Real-time chat between all user roles
 - SOS emergency flagging and admin acknowledgement
 - Unread message badge counts
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 - Docker deployment and service startup
 
 ### 3.3 Test Strategy
@@ -374,12 +413,18 @@ The system should be tested at three levels:
 2. Integration testing
    - Verify controller-to-database flows.
    - Confirm secured endpoints respect roles and JWT authentication.
+<<<<<<< HEAD
+=======
    - Verify WebSocket connections authenticate correctly via JWT query parameter.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 3. System and acceptance testing
    - Test the complete web application from the user interface.
    - Confirm the deployed Docker stack works end to end.
+<<<<<<< HEAD
+=======
    - Test real-time message delivery between two browser sessions.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### 3.4 Test Environment
 
@@ -387,7 +432,10 @@ The system should be tested at three levels:
 - Frontend: React 19 with Vite
 - Database: PostgreSQL
 - Container platform: Docker and Docker Compose
+<<<<<<< HEAD
+=======
 - WebSocket: STOMP over SockJS
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### 3.5 Entry Criteria
 
@@ -396,7 +444,10 @@ Testing should start when:
 - the application builds successfully
 - database connection settings are available
 - the frontend can reach the backend API
+<<<<<<< HEAD
+=======
 - the WebSocket endpoint `/ws` is reachable
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### 3.6 Exit Criteria
 
@@ -405,8 +456,11 @@ Testing is complete when:
 - critical endpoints work as expected
 - login and role-based access pass
 - main user workflows succeed
+<<<<<<< HEAD
+=======
 - real-time messages are delivered without page refresh
 - SOS alerts reach admin in real time
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 - no blocking deployment errors remain
 
 ### 3.7 Sample Test Cases
@@ -425,6 +479,8 @@ Testing is complete when:
 | TC-10 | View prescriptions and meal plans | Records are loaded for the authenticated user |
 | TC-11 | Send and view notifications | Notification is stored and can be retrieved |
 | TC-12 | Start the app with Docker Compose | Backend, frontend, and database all start correctly |
+<<<<<<< HEAD
+=======
 | TC-13 | Patient starts a chat with a doctor | Conversation is created and both users can see it |
 | TC-14 | Send a message in a conversation | Message appears in real time without page refresh |
 | TC-15 | Receive a message from another user | Message appears in real time without page refresh |
@@ -435,6 +491,7 @@ Testing is complete when:
 | TC-20 | Unread badge on Chat nav item | Badge shows correct count and clears when chat is opened |
 | TC-21 | New chat modal search | Filtering by name or role shows correct users |
 | TC-22 | Chat on mobile screen | List and chat panels switch correctly with back button |
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ### 3.8 Recommended Test Execution
 
@@ -442,7 +499,11 @@ Run the following checks:
 
 ```bash
 cd DiaCare
+<<<<<<< HEAD
+mvn test
+=======
 mvn clean test
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 cd ../DiaCareFrontend
 npm run build

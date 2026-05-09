@@ -2,6 +2,8 @@
 
 This manual explains the DiaCare project in simple terms so students can understand what it does, how it is organized, and how to run it.
 
+<<<<<<< HEAD
+=======
 ## Reference Organization
 
 The reference organization for this project is Rwanda Diabetics Association. In simple terms, DiaCare is presented as a prototype system that such an organization could use to support diabetes care coordination, patient monitoring, doctor communication, and emergency follow-up.
@@ -17,15 +19,22 @@ The full project README includes the main diagrams needed for submission:
 - activity diagram
 - deployment diagram
 
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 ## What DiaCare Is
 
 DiaCare is a diabetes care management system. It helps different users manage health information in one place.
 
 ### Main User Roles
 
+<<<<<<< HEAD
+- Patient: records glucose readings, books appointments, and views prescriptions or meal plans
+- Doctor: reviews patient data and manages care
+- Admin: manages users, reports, and system records
+=======
 - Patient: records glucose readings, books appointments, views prescriptions or meal plans, and chats with their doctor or administration
 - Doctor: reviews patient data, manages care, and communicates with patients and admin through chat
 - Admin: manages users, reports, system records, and handles patient complaints and SOS emergencies through chat
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ## Main Features
 
@@ -37,8 +46,11 @@ DiaCare is a diabetes care management system. It helps different users manage he
 - meal plan viewing
 - notifications
 - dashboards for each user role
+<<<<<<< HEAD
+=======
 - real-time chat between doctors, patients, and admin
 - SOS emergency messaging with instant admin alerts
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ## Project Structure
 
@@ -59,11 +71,16 @@ It shows that:
 - data can be saved and read from the database
 - different roles can access different features
 - the frontend and backend can work together
+<<<<<<< HEAD
+
+## Design Pattern Used
+=======
 - users can communicate in real time through chat
 
 ## Design Patterns Used
 
 ### Repository Pattern
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 The project mainly uses the `Repository Pattern`.
 
@@ -75,10 +92,13 @@ This means:
 
 This keeps the code clean and easier to maintain.
 
+<<<<<<< HEAD
+=======
 ### Observer Pattern
 
 The real-time chat uses an observer-style approach through WebSocket messaging. When a user sends a message, the server immediately pushes it to the recipient without the recipient needing to refresh the page. This is similar to how WhatsApp delivers messages instantly.
 
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 ## Software Best Practices Used
 
 - code is organized into layers
@@ -87,6 +107,8 @@ The real-time chat uses an observer-style approach through WebSocket messaging. 
 - errors are handled consistently
 - API calls are centralized in one client file
 - the frontend is built as reusable components
+<<<<<<< HEAD
+=======
 - response DTOs are used to safely transfer data between the backend and frontend without exposing database internals
 
 ## Real-Time Chat Module
@@ -120,6 +142,7 @@ Patients can flag a message as an SOS emergency by tapping the red triangle butt
 4. Doctors and admins can click Acknowledge on the message to confirm they have seen it. The label then changes to a green confirmed state.
 
 This feature is designed so that patients in urgent situations can get help quickly even if their doctor is not immediately available.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ## How To Run The Project With Docker
 
@@ -172,9 +195,12 @@ The software test plan checks whether the system works correctly before submissi
 - appointments
 - prescriptions and meal plans
 - notifications
+<<<<<<< HEAD
+=======
 - real-time chat message delivery
 - SOS emergency alerts and acknowledgement
 - unread message badge counts
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 - Docker deployment
 
 ### Example test steps
@@ -183,6 +209,13 @@ The software test plan checks whether the system works correctly before submissi
 2. Register or log in a user.
 3. Open protected screens.
 4. Add and view health data.
+<<<<<<< HEAD
+5. Confirm the correct data is returned.
+
+### Expected result
+
+The system should run without errors, protect restricted pages, and save/retrieve data correctly.
+=======
 5. Open the Chat page and start a conversation with another user.
 6. Send a message and confirm it appears instantly on the other side without refreshing.
 7. Send an SOS message as a patient and confirm the admin sees the alert.
@@ -192,12 +225,18 @@ The software test plan checks whether the system works correctly before submissi
 ### Expected result
 
 The system should run without errors, protect restricted pages, save and retrieve data correctly, and deliver messages in real time.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 ## Quick Student Checklist
 
 - Read the prototype section first.
+<<<<<<< HEAD
+- Learn the repository pattern used in the backend.
+- Review the Docker setup and run the project.
+=======
 - Learn the repository pattern and observer pattern used in the backend.
 - Review the Docker setup and run the project.
 - Test the chat feature between two different browser sessions logged in as different users.
+>>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 - Use the test plan to verify the application.
 - Include both documents in your submission.
