@@ -1,0 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* ── Reveal animations ───────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(32px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ── Nav link hover / active ─────────────────────────────────────────────── */
+.nav-link {
+  position: relative;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  right: 50%;
+  height: 2px;
+  background-color: var(--color-primary-600);
+  border-radius: 2px;
+  transition: left 0.2s ease, right 0.2s ease;
+}
+.nav-link:hover::after,
+.nav-link.active::after {
+  left: 0.85rem;
+  right: 0.85rem;
+}
+
+/* scrolled state — blue underline + blue text */
+[data-scrolled="true"] .nav-link:hover { color: var(--color-primary-600) !important; }
+[data-scrolled="true"] .nav-link::after { background-color: var(--color-primary-600); }
+
+/* transparent state — white underline + white text */
+[data-scrolled="false"] .nav-link:hover { color: #fff !important; }
+[data-scrolled="false"] .nav-link::after { background-color: rgba(255,255,255,0.7); }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar-link:hover {
+  background-color: var(--color-sidebar-bg-hover) !important;
+  color: var(--color-sidebar-active) !important;
+}
+
+@media (max-width: 768px) {
+  .docs-table          { display: none !important; }
+  .docs-cards          { display: flex !important; }
+  .dash-grid           { grid-template-columns: 1fr !important; }
+  .header-profile-text { display: none !important; }
+}
+
+@theme {
+  /* ── Primary: IDF Blue (brand authority) ── */
+  --color-primary-900:       #001D39;
+  --color-primary-800:       #0A4174;
+  --color-primary-600:       #49769F;
+  --color-primary-400:       #7BBDE8;
+  --color-primary-200:       #BDD8E9;
+  --color-primary-50:        #ECFEFF;
+
+  /* ── Supporting: Forest Green (wellness) ── */
+  --color-forest-700:        #163832;
+  --color-forest-600:        #235347;
+  --color-forest-300:        #8EB69B;
+  --color-forest-100:        #DAF1DE;
+  --color-forest-50:         #F0FBF8;
+
+  /* ── Neutrals ── */
+  --color-bg:                #F8FAFB;
+  --color-bg-subtle:         #EFF6F8;
+  --color-surface:           #FFFFFF;
+  --color-border:            #E2E8F0;
+  --color-border-strong:     #CBD5E1;
+
+  /* ── Text ── */
+  --color-text:              #1E293B;
+  --color-text-muted:        #64748B;
+  --color-text-subtle:       #94A3B8;
+  --color-text-inverse:      #FFFFFF;
+
+  /* ── Sidebar ── */
+  --color-sidebar-bg:        #001D39;
+  --color-sidebar-bg-hover:  #0A4174;
+  --color-sidebar-text:      #7BBDE8;
+  --color-sidebar-active:    #BDD8E9;
+
+  /* ── Semantic: Health States ── */
+  --color-success:           #16A34A;
+  --color-warning:           #D97706;
+  --color-error:             #DC2626;
+  --color-info:              #49769F;
+  --color-insight:           #7C3AED;
+
+  /* ── Semantic Surfaces ── */
+  --color-success-bg:        #F0FDF4;
+  --color-warning-bg:        #FFFBEB;
+  --color-error-bg:          #FFF1F0;
+  --color-info-bg:           #EFF6FF;
+  --color-insight-bg:        #F5F3FF;
+
+  /* ── Fonts ── */
+  --font-sans:               'Plus Jakarta Sans', sans-serif;
+  --font-heading:            'Plus Jakarta Sans', sans-serif;
+  --font-mono:               'JetBrains Mono', monospace;
+
+  /* ── Spacing scale ── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+
+  /* ── Border radius ── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 9999px;
+
+  /* ── Button heights ── */
+  --btn-h-sm:   36px;
+  --btn-h-md:   40px;
+  --btn-h-lg:   48px;
+  --btn-h-xl:   52px;
+  --btn-h-2xl:  56px;
+
+  /* ── Input heights ── */
+  --input-h-desktop:  40px;
+  --input-h-tablet:   48px;
+  --input-h-mobile:   56px;
+
+  /* ── Navigation ── */
+  --nav-top-h:        64px;
+  --nav-bottom-h:     72px;
+  --sidebar-w:        240px;
+  --sidebar-w-tablet: 280px;
+  --nav-item-h:       48px;
+
+  /* ── Typography ── */
+  --text-display: 900 40px/1.08 var(--font-heading);
+  --text-h1:      800 30px/1.15 var(--font-heading);
+  --text-h2:      700 24px/1.25 var(--font-heading);
+  --text-h3:      600 18px/1.4  var(--font-heading);
+  --text-body:    400 16px/1.7  var(--font-sans);
+  --text-small:   400 14px/1.6  var(--font-sans);
+  --text-micro:   500 12px/1.4  var(--font-sans);
+  --text-data:    500 22px/1.2  var(--font-mono);
+
+  /* ── Page margins ── */
+  --page-margin-mobile:  20px;
+  --page-margin-tablet:  32px;
+  --page-margin-desktop: 48px;
+}
