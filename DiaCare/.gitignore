@@ -1,7 +1,6 @@
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
-<<<<<<< HEAD
 *.log
 .env
 .env.*
@@ -23,7 +22,6 @@ target/
 
 ### Build output ###
 /nbbuild/
-=======
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -46,14 +44,11 @@ target/
 /nbproject/private/
 /nbbuild/
 /dist/
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 /nbdist/
 /.nb-gradle/
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-<<<<<<< HEAD
-=======
 
 ### VS Code ###
 .vscode/
@@ -62,4 +57,3 @@ build/
 .env
 .env.*
 !.env.example
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
