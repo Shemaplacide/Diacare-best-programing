@@ -4,23 +4,15 @@ import { Menu, Bell, ChevronDown, LogOut, User, Settings } from 'lucide-react'
 import { authStore } from '../store/authStore'
 import { PATIENT_NAV, PATIENT_PAGE_TITLES } from '../constants/patientNav'
 import Logo from '../components/ui/Logo'
-<<<<<<< HEAD
-=======
 import { useChatUnread } from '../hooks/useChatUnread'
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
 const MOBILE_BP = 768
 const TABLET_BP = 1024
 
 function PatientSidebar({ collapsed, onNavClick }) {
-<<<<<<< HEAD
   const navigate = useNavigate()
-  const signOut  = () => { authStore.clear(); navigate('/login') }
-=======
-  const navigate   = useNavigate()
-  const signOut    = () => { authStore.clear(); navigate('/login') }
+  const signOut = () => { authStore.clear(); navigate('/login') }
   const chatUnread = useChatUnread()
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
   return (
     <aside className="flex flex-col h-screen sticky top-0 shrink-0 transition-all duration-200 overflow-hidden"
@@ -46,10 +38,6 @@ function PatientSidebar({ collapsed, onNavClick }) {
               textDecoration: 'none', whiteSpace: 'nowrap', overflow: 'hidden',
               transition: 'background 0.15s, color 0.15s', height: 'var(--nav-item-h)',
             })}>
-<<<<<<< HEAD
-            <span className="shrink-0">{item.icon}</span>
-            {!collapsed && <span>{item.label}</span>}
-=======
             <span className="shrink-0 relative">
               {item.icon}
               {item.href === '/patient/chat' && chatUnread > 0 && (
@@ -64,7 +52,6 @@ function PatientSidebar({ collapsed, onNavClick }) {
                 {chatUnread > 99 ? '99+' : chatUnread}
               </span>
             )}
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
           </NavLink>
         ))}
       </nav>

@@ -3,17 +3,11 @@ import { LogOut } from 'lucide-react'
 import { ADMIN_NAV } from '../../constants/nav'
 import Logo from './Logo'
 import { useSignOut } from '../../utils/useSignOut'
-<<<<<<< HEAD
-
-export default function Sidebar({ collapsed, onNavClick }) {
-  const signOut = useSignOut()
-=======
 import { useChatUnread } from '../../hooks/useChatUnread'
 
 export default function Sidebar({ collapsed, onNavClick }) {
-  const signOut    = useSignOut()
+  const signOut = useSignOut()
   const chatUnread = useChatUnread()
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
 
   return (
     <aside
@@ -52,10 +46,6 @@ export default function Sidebar({ collapsed, onNavClick }) {
               height: 'var(--nav-item-h)',
             })}
           >
-<<<<<<< HEAD
-            <span className="shrink-0">{item.icon}</span>
-            {!collapsed && <span>{item.label}</span>}
-=======
             <span className="shrink-0 relative">
               {item.icon}
               {item.href === '/chat' && chatUnread > 0 && (
@@ -70,7 +60,6 @@ export default function Sidebar({ collapsed, onNavClick }) {
                 {chatUnread > 99 ? '99+' : chatUnread}
               </span>
             )}
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
           </NavLink>
         ))}
       </nav>

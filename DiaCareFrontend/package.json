@@ -10,10 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
-=======
     "@stomp/stompjs": "^7.3.0",
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
     "@tailwindcss/vite": "^4.2.4",
     "axios": "^1.15.2",
     "lucide-react": "^1.11.0",
@@ -22,10 +19,7 @@
     "react-router-dom": "^7.14.2",
     "react-toastify": "^11.1.0",
     "recharts": "^3.8.1",
-<<<<<<< HEAD
-=======
     "sockjs-client": "^1.6.1",
->>>>>>> 1729564dac2176c3a5655aceb9823bf29bd8e4f9
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {
