@@ -1,7 +1,7 @@
 [build]
   base    = "DiaCareFrontend"
   command = "npm run build"
-  publish = "DiaCareFrontend/dist"
+  publish = "dist"
 
 [build.environment]
   NODE_VERSION = "20"
