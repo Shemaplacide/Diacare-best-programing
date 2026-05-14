@@ -2,7 +2,11 @@ package com.auca.diacare.doctor.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -71,9 +75,12 @@ public class DoctorServiceImpl implements DoctorService {
     public Doctor updateDoctorProfile(UUID publicId, Doctor doctorDetails) {
         Doctor doctor = doctorRepository.findByUser_PublicId(publicId)
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
-        doctor.setSpecialization(doctorDetails.getSpecialization());
-        doctor.setLicenseNumber(doctorDetails.getLicenseNumber());
-        doctor.setYearsOfExperience(doctorDetails.getYearsOfExperience());
+        if (doctorDetails.getSpecialization() != null)
+            doctor.setSpecialization(doctorDetails.getSpecialization());
+        if (doctorDetails.getLicenseNumber() != null)
+            doctor.setLicenseNumber(doctorDetails.getLicenseNumber());
+        if (doctorDetails.getYearsOfExperience() != null)
+            doctor.setYearsOfExperience(doctorDetails.getYearsOfExperience());
         return doctorRepository.save(doctor);
     }
 
@@ -93,6 +100,7 @@ public class DoctorServiceImpl implements DoctorService {
             empty.setTotalPatients(0);
             empty.setTodayAppointments(0);
             empty.setPendingAppointments(0);
+            empty.setCriticalPatientCount(0);
             empty.setUpcomingAppointments(List.of());
             empty.setCriticalAlerts(List.of());
             return empty;
@@ -116,10 +124,19 @@ public class DoctorServiceImpl implements DoctorService {
                 .limit(10)
                 .toList();
 
-        // Critical glucose alerts from last 24 hours across all patients
+        Map<Long, Patient> patientsById = new LinkedHashMap<>();
+        patientRepository.findByPreferredDoctor_Id(doctor.getId()).stream()
+                .filter(Objects::nonNull)
+                .forEach(patient -> patientsById.put(patient.getId(), patient));
+        allAppointments.stream()
+                .map(Appointment::getPatient)
+                .filter(Objects::nonNull)
+                .forEach(patient -> patientsById.put(patient.getId(), patient));
+        List<Patient> myPatients = new ArrayList<>(patientsById.values());
+
+        // Critical glucose alerts from last 24 hours for this doctor's patients
         LocalDateTime since = LocalDateTime.now().minusHours(24);
-        List<Patient> allPatients = patientRepository.findAll();
-        List<CriticalAlert> alerts = allPatients.stream()
+        List<CriticalAlert> alerts = myPatients.stream()
                 .flatMap(p -> glucoseRepository
                         .findByPatient_IdAndRecordedAtBetweenOrderByRecordedAtAsc(p.getId(), since, LocalDateTime.now())
                         .stream()
@@ -134,10 +151,14 @@ public class DoctorServiceImpl implements DoctorService {
                 .toList();
 
         DoctorDashboardResponse response = new DoctorDashboardResponse();
-        response.setTotalPatients(allPatients.size());
+        response.setTotalPatients(myPatients.size());
         response.setTodayAppointments(todayAppointments.size());
         response.setPendingAppointments(pending.size());
         response.setUpcomingAppointments(upcoming);
+        response.setCriticalPatientCount((int) alerts.stream()
+                .map(CriticalAlert::getPatientEmail)
+                .distinct()
+                .count());
         response.setCriticalAlerts(alerts);
         return response;
     }

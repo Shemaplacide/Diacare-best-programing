@@ -14,9 +14,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import com.auca.diacare.doctor.model.Doctor;
 
 @Entity
 @Table(name = "patients")
@@ -45,6 +47,19 @@ public class Patient {
 
     @Column(name = "target_hba1c")
     private Double targetHbA1c;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    @Column(name = "has_allergies")
+    private Boolean hasAllergies = false;
+
+    @Column(name = "allergy_details")
+    private String allergyDetails;
+
+    @ManyToOne
+    @JoinColumn(name = "preferred_doctor_id")
+    private Doctor preferredDoctor;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -110,6 +125,38 @@ public class Patient {
 
     public void setTargetHbA1c(Double targetHbA1c) {
         this.targetHbA1c = targetHbA1c;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public Boolean getHasAllergies() {
+        return hasAllergies;
+    }
+
+    public void setHasAllergies(Boolean hasAllergies) {
+        this.hasAllergies = hasAllergies;
+    }
+
+    public String getAllergyDetails() {
+        return allergyDetails;
+    }
+
+    public void setAllergyDetails(String allergyDetails) {
+        this.allergyDetails = allergyDetails;
+    }
+
+    public Doctor getPreferredDoctor() {
+        return preferredDoctor;
+    }
+
+    public void setPreferredDoctor(Doctor preferredDoctor) {
+        this.preferredDoctor = preferredDoctor;
     }
 
     public LocalDateTime getCreatedAt() {

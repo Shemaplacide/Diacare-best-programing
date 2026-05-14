@@ -15,6 +15,8 @@ public interface PatientService {
 
     Patient updatePatientProfile(UUID publicId, Patient patientDetails);
 
+    Patient savePatient(Patient patient);
+
     void deletePatient(UUID publicId);
 
     List<Patient> getAllPatients();

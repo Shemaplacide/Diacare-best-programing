@@ -8,6 +8,7 @@ import com.auca.diacare.metrics.model.HealthMetrics;
 
 public interface HealthMetricsService {
     HealthMetrics recordMetrics(HealthMetrics metrics);
+    HealthMetrics updateMetrics(Long id, HealthMetrics metrics);
     Optional<HealthMetrics> getLatest(String email);
     List<HealthMetrics> getHistory(String email);
     List<HealthMetrics> getAll();

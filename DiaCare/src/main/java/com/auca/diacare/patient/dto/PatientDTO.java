@@ -15,6 +15,14 @@ public class PatientDTO {
 
     private UUID userId;
 
+    private String phoneNumber;
+
+    private Boolean hasAllergies;
+
+    private String allergyDetails;
+
+    private UUID preferredDoctorPublicId;
+
     // Getters and Setters
     public String getDiabetesType() {
         return diabetesType;
@@ -54,5 +62,37 @@ public class PatientDTO {
 
     public void setUserId(UUID userId) {
         this.userId = userId;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public Boolean getHasAllergies() {
+        return hasAllergies;
+    }
+
+    public void setHasAllergies(Boolean hasAllergies) {
+        this.hasAllergies = hasAllergies;
+    }
+
+    public String getAllergyDetails() {
+        return allergyDetails;
+    }
+
+    public void setAllergyDetails(String allergyDetails) {
+        this.allergyDetails = allergyDetails;
+    }
+
+    public UUID getPreferredDoctorPublicId() {
+        return preferredDoctorPublicId;
+    }
+
+    public void setPreferredDoctorPublicId(UUID preferredDoctorPublicId) {
+        this.preferredDoctorPublicId = preferredDoctorPublicId;
     }
 }

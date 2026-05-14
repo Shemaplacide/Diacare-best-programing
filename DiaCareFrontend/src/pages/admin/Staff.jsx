@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
-import { UsersRound, Eye, CheckCircle, Ban, Plus, Trash2 } from 'lucide-react'
+import { UsersRound, Eye, CheckCircle, Ban, Plus, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'react-toastify'
 import DataTable from '../../components/ui/DataTable'
-import DetailsDrawer, { drawerPrimaryBtn } from '../../components/ui/DetailsDrawer'
+import DetailsDrawer, { drawerPrimaryBtn, drawerOutlineBtn } from '../../components/ui/DetailsDrawer'
 import PageHeader from '../../components/ui/PageHeader'
 import FilterBar from '../../components/ui/FilterBar'
 import Modal from '../../components/ui/Modal'
 import InputField from '../../components/ui/InputField'
 import { StatusBadge, DOCTOR_STATUS } from '../../constants/status'
-import { getAllStaff, createStaff, deleteStaff, deactivateUser, activateUser } from '../../api/admin'
+import { getAllStaff, createStaff, updateStaff, deleteStaff, deactivateUser, activateUser } from '../../api/admin'
 
 const PAGE_SIZE = 10
 
@@ -16,6 +16,20 @@ const ROLE_COLORS = {
   ADMIN:  { bg: '#F5F3FF', color: '#7C3AED' },
   DOCTOR: { bg: '#EFF6F8', color: '#0A4174' },
 }
+
+const DOCTOR_SPECIALIZATIONS = [
+  'Endocrinology',
+  'Diabetology',
+  'Internal Medicine',
+  'Family Medicine',
+  'General Practice',
+  'Nutrition and Diabetes Care',
+  'Pediatric Endocrinology',
+  'Cardiology',
+  'Nephrology',
+  'Ophthalmology',
+  'Podiatry',
+]
 
 const COLUMNS = [
   {
@@ -50,7 +64,7 @@ const COLUMNS = [
   },
 ]
 
-const EMPTY_FORM = { name: '', email: '', password: '', role: 'DOCTOR', specialization: '', licenseNumber: '', department: '' }
+const EMPTY_FORM = { name: '', email: '', password: '', confirmPassword: '', role: 'DOCTOR', specialization: '', licenseNumber: '', department: '' }
 
 export default function Staff() {
   const [staff,      setStaff]      = useState([])
@@ -64,6 +78,7 @@ export default function Staff() {
   const [form,       setForm]       = useState(EMPTY_FORM)
   const [saving,     setSaving]     = useState(false)
   const [errors,     setErrors]     = useState({})
+  const [editing,    setEditing]    = useState(null)
 
   const load = () => {
     setLoading(true)
@@ -114,10 +129,34 @@ export default function Staff() {
     }
   }
 
+  const openCreate = () => {
+    setEditing(null)
+    setForm(EMPTY_FORM)
+    setErrors({})
+    setModalOpen(true)
+  }
+
+  const openEdit = (member) => {
+    setEditing(member)
+    setForm({
+      name: member.username ?? '',
+      email: member.email ?? '',
+      password: '',
+      confirmPassword: '',
+      role: member.role ?? 'DOCTOR',
+      specialization: '',
+      licenseNumber: '',
+      department: '',
+    })
+    setErrors({})
+    setModalOpen(true)
+  }
+
   const rowActions = (row) => {
     const isActive = row.isActive !== false
     return [
       { label: 'View Details', icon: <Eye size={14} />, onClick: () => { setSelected(row); setDrawerOpen(true) } },
+      { label: 'Edit', icon: <Pencil size={14} />, onClick: () => openEdit(row) },
       isActive
         ? { label: 'Suspend',  icon: <Ban size={14} />,         onClick: () => toggleActive(row, false), danger: true }
         : { label: 'Activate', icon: <CheckCircle size={14} />, onClick: () => toggleActive(row, true) },
@@ -129,8 +168,10 @@ export default function Staff() {
     const e = {}
     if (!form.name.trim())  e.name  = 'Name is required'
     if (!form.email.trim()) e.email = 'Email is required'
-    if (!form.password || form.password.length < 6) e.password = 'Password must be at least 6 characters'
-    if (form.role === 'DOCTOR' && !form.specialization.trim()) e.specialization = 'Specialization is required'
+    if (!editing && (!form.password || form.password.length < 6)) e.password = 'Password must be at least 6 characters'
+    if (editing && form.password && form.password.length < 6) e.password = 'Password must be at least 6 characters'
+    if (form.confirmPassword !== form.password) e.confirmPassword = 'Passwords do not match'
+    if (!editing && form.role === 'DOCTOR' && !form.specialization.trim()) e.specialization = 'Specialization is required'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -139,14 +180,30 @@ export default function Staff() {
     if (!validate()) return
     setSaving(true)
     try {
-      await createStaff(form)
-      toast.success(`${form.role === 'ADMIN' ? 'Admin' : 'Doctor'} created successfully`)
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        role: form.role,
+        specialization: form.specialization,
+        licenseNumber: form.licenseNumber.trim(),
+        department: form.department.trim(),
+      }
+      if (form.password) payload.password = form.password
+      if (editing) {
+        await updateStaff(editing.publicId, payload)
+        toast.success('Staff member updated')
+      } else {
+        await createStaff({ ...payload, password: form.password })
+        toast.success(`${form.role === 'ADMIN' ? 'Admin' : 'Doctor'} created successfully`)
+      }
       setModalOpen(false)
       setForm(EMPTY_FORM)
+      setEditing(null)
       setErrors({})
+      setDrawerOpen(false)
       load()
     } catch (err) {
-      toast.error(err.response?.data?.message ?? 'Failed to create staff member')
+      toast.error(err.response?.data?.message ?? `Failed to ${editing ? 'update' : 'create'} staff member`)
     } finally {
       setSaving(false)
     }
@@ -164,7 +221,7 @@ export default function Staff() {
         title="Staff"
         subtitle={`${filtered.length} staff members`}
         actions={
-          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setModalOpen(true) }}
+          <button onClick={openCreate}
             className="flex items-center gap-2 px-4 cursor-pointer border-0 text-white text-sm font-semibold rounded-xl transition"
             style={{ height: 'var(--btn-h-sm)', backgroundColor: 'var(--color-primary-900)' }}>
             <Plus size={15} /> Add Staff
@@ -187,11 +244,10 @@ export default function Staff() {
         rowActions={rowActions}
       />
 
-      {/* Add Staff Modal */}
       <Modal
         open={modalOpen} onClose={() => setModalOpen(false)}
-        title="Add Staff Member"
-        subtitle="Create a new doctor or admin account"
+        title={editing ? 'Edit Staff Member' : 'Add Staff Member'}
+        subtitle={editing ? 'Update account details and role profile' : 'Create a new doctor or admin account'}
         footer={
           <>
             <button onClick={() => setModalOpen(false)}
@@ -202,19 +258,21 @@ export default function Staff() {
             <button onClick={handleSave} disabled={saving}
               className="px-5 text-sm font-semibold text-white rounded-xl border-0 cursor-pointer disabled:opacity-60"
               style={{ height: 'var(--btn-h-sm)', backgroundColor: 'var(--color-primary-900)' }}>
-              {saving ? 'Creating...' : 'Create'}
+              {saving ? (editing ? 'Saving...' : 'Creating...') : (editing ? 'Save Changes' : 'Create')}
             </button>
           </>
         }
       >
         <div className="flex gap-2 mb-4">
           {['DOCTOR', 'ADMIN'].map(r => (
-            <button key={r} onClick={() => setForm(f => ({ ...f, role: r }))}
+            <button key={r} onClick={() => !editing && setForm(f => ({ ...f, role: r }))}
+              disabled={Boolean(editing)}
               className="flex-1 py-2 text-sm font-semibold rounded-xl border cursor-pointer transition"
               style={{
                 backgroundColor: form.role === r ? 'var(--color-primary-900)' : 'transparent',
                 color: form.role === r ? '#fff' : 'var(--color-text-muted)',
                 borderColor: form.role === r ? 'var(--color-primary-900)' : 'var(--color-border)',
+                opacity: editing && form.role !== r ? 0.55 : 1,
               }}>
               {r}
             </button>
@@ -223,11 +281,29 @@ export default function Staff() {
 
         <InputField label="Full Name"  placeholder="Dr. John Doe" {...field('name')} />
         <InputField label="Email"      placeholder="john@diacare.com" type="email" {...field('email')} />
-        <InputField label="Password"   placeholder="Min. 6 characters" type="password" {...field('password')} />
+        <InputField label={editing ? 'New Password' : 'Password'} placeholder={editing ? 'Leave empty to keep current password' : 'Min. 6 characters'} type="password" {...field('password')} />
+        <InputField label="Confirm Password" placeholder="Re-enter password" type="password" {...field('confirmPassword')} />
 
         {form.role === 'DOCTOR' && (
           <>
-            <InputField label="Specialization" placeholder="e.g. Endocrinology" {...field('specialization')} />
+            <div className="flex flex-col gap-1.5 mb-4">
+              <label className="text-xs font-semibold text-[#1E293B]">Specialization</label>
+              <select
+                value={form.specialization}
+                onChange={(e) => setForm(f => ({ ...f, specialization: e.target.value }))}
+                style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}
+                className={`px-3.5 border bg-white text-sm text-[#1E293B] font-[inherit] outline-none transition w-full
+                  ${errors.specialization
+                    ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-2 focus:ring-[#FFF1F0]'
+                    : 'border-[#E2E8F0] focus:border-[#0A4174] focus:ring-2 focus:ring-[#ECFEFF]'}`}
+              >
+                <option value="">Select specialization</option>
+                {DOCTOR_SPECIALIZATIONS.map(specialization => (
+                  <option key={specialization} value={specialization}>{specialization}</option>
+                ))}
+              </select>
+              {errors.specialization && <p className="text-xs text-[#DC2626] mt-0.5">{errors.specialization}</p>}
+            </div>
             <InputField label="License Number" placeholder="e.g. RW-MED-003"   {...field('licenseNumber')} />
           </>
         )}
@@ -255,10 +331,12 @@ export default function Staff() {
         ]}]}
         footer={selected && (
           <>
+            <button onClick={() => openEdit(selected)} style={drawerOutlineBtn()}><Pencil size={14} /> Edit</button>
             {selected.isActive !== false
               ? <button onClick={() => { toggleActive(selected, false); setDrawerOpen(false) }} style={drawerPrimaryBtn('#DC2626')}><Ban size={14} /> Suspend</button>
               : <button onClick={() => { toggleActive(selected, true);  setDrawerOpen(false) }} style={drawerPrimaryBtn('#16A34A')}><CheckCircle size={14} /> Activate</button>
             }
+            <button onClick={() => remove(selected)} style={drawerPrimaryBtn('#991B1B')}><Trash2 size={14} /> Delete</button>
           </>
         )}
       />

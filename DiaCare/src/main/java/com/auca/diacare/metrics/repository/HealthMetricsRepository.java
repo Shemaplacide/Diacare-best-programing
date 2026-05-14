@@ -11,6 +11,7 @@ import com.auca.diacare.metrics.model.HealthMetrics;
 @Repository
 public interface HealthMetricsRepository extends JpaRepository<HealthMetrics, Long> {
     List<HealthMetrics> findByPatient_User_EmailOrderByRecordedAtDesc(String email);
+    List<HealthMetrics> findByPatient_User_Email(String email);
     Optional<HealthMetrics> findFirstByPatient_User_EmailOrderByRecordedAtDesc(String email);
     List<HealthMetrics> findByPatient_IdOrderByRecordedAtDesc(Long patientId);
 }

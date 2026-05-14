@@ -11,4 +11,5 @@ import com.auca.diacare.notification.model.Notification;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     List<Notification> findByRecipient_EmailOrderByCreatedAtDesc(String email);
     List<Notification> findByRecipient_EmailAndIsReadFalse(String email);
+    List<Notification> findByRecipient_Email(String email);
 }

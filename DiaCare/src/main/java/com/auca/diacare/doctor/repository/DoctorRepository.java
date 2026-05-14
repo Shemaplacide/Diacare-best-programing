@@ -12,6 +12,7 @@ import com.auca.diacare.doctor.model.Doctor;
 @Repository
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     Optional<Doctor> findByUser_PublicId(UUID publicId);
+    Optional<Doctor> findByUser_Id(Long userId);
     Optional<Doctor> findByUserEmail(String email);
     Optional<Doctor> findByLicenseNumber(String licenseNumber);
     List<Doctor> findBySpecialization(String specialization);

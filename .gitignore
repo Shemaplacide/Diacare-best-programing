@@ -1,7 +1,23 @@
 .history/
 .vscode/
-c
 .DS_Store
+
+# Runtime logs
+*.log
+
+# Backend build output
+DiaCare/target/
+
+# Frontend dependencies and build output
+DiaCareFrontend/node_modules/
+DiaCareFrontend/dist/
+DiaCareFrontend/.vite/
+
+# Local environment files
 .env
 .env.*
 !.env.example
+DiaCare/.env
+DiaCare/.env.*
+DiaCareFrontend/.env
+DiaCareFrontend/.env.*

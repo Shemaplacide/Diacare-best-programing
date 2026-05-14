@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { Activity, Calendar, Pill, FlaskConical, ArrowRight, AlertTriangle, Utensils } from 'lucide-react'
+import { Activity, Calendar, Pill, FlaskConical, ArrowRight, AlertTriangle, Utensils, Target } from 'lucide-react'
 import { StatusBadge, GLUCOSE_STATUS, classifyGlucose } from '../../constants/status'
 import { authStore } from '../../store/authStore'
 import { getMyReadings, getMyTrend } from '../../api/glucose'
 import { getMyAppointments } from '../../api/appointments'
 import { getMyPrescriptions } from '../../api/prescriptions'
+import { getMyProfile } from '../../api/patient'
+import { getTimeGreeting } from '../../utils/greeting'
 
 const QUICK_ACTIONS = [
   { label: 'Log Glucose',   icon: <Activity size={18} />,    color: '#16A34A', bg: '#F0FDF4', href: '/patient/glucose'       },
@@ -29,22 +31,23 @@ function GlucoseTooltip({ active, payload, label }) {
 export default function PatientDashboard() {
   const navigate = useNavigate()
   const user     = authStore.getUser()
-  const hour     = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const greeting = getTimeGreeting()
 
   const [readings,     setReadings]     = useState([])
   const [trend,        setTrend]        = useState(null)
   const [appointments, setAppointments] = useState([])
   const [prescriptions,setPrescriptions]= useState([])
+  const [profile,      setProfile]      = useState(null)
   const [loading,      setLoading]      = useState(true)
 
   useEffect(() => {
-    Promise.all([getMyReadings(), getMyTrend(), getMyAppointments(), getMyPrescriptions()])
-      .then(([r, t, a, p]) => {
+    Promise.all([getMyReadings(), getMyTrend(), getMyAppointments(), getMyPrescriptions(), getMyProfile()])
+      .then(([r, t, a, p, profileRes]) => {
         setReadings(r.data)
         setTrend(t.data)
         setAppointments(a.data)
         setPrescriptions(p.data)
+        setProfile(profileRes.data)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -71,6 +74,7 @@ export default function PatientDashboard() {
   const stats = [
     { label: 'Last Glucose', value: lastGlucose ? `${lastGlucose.value}` : '—', unit: 'mg/dL', icon: <Activity size={20} />, bg: 'linear-gradient(135deg,#16A34A,#4ade80)' },
     { label: 'Avg 7-day',    value: trend?.averageLast7Days ?? '—',              unit: 'mg/dL', icon: <FlaskConical size={20} />, bg: 'linear-gradient(135deg,#0A4174,#49769F)' },
+    { label: 'Target HbA1c', value: profile?.targetHbA1c ? `${profile.targetHbA1c}` : 'Not set', unit: profile?.targetHbA1c ? '%' : '', icon: <Target size={20} />, bg: 'linear-gradient(135deg,#0891B2,#22d3ee)' },
     { label: 'Next Appt',    value: upcomingAppts[0] ? upcomingAppts[0].appointmentDate?.split('T')[0] : 'None', unit: '', icon: <Calendar size={20} />, bg: 'linear-gradient(135deg,#D97706,#fbbf24)' },
     { label: 'Active Meds',  value: activeRxCount,                               unit: 'meds',  icon: <Pill size={20} />, bg: 'linear-gradient(135deg,#7C3AED,#a78bfa)' },
   ]
@@ -102,7 +106,7 @@ export default function PatientDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
         {stats.map(s => (
           <div key={s.label} className="relative rounded-2xl overflow-hidden p-5 flex flex-col gap-4" style={{ background: s.bg }}>
             <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-white/10" />

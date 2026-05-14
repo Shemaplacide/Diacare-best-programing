@@ -59,7 +59,6 @@ function ProfileSection() {
   const [patientForm, setPatientForm] = useState({
     diabetesType: '', dateOfBirth: '', gender: '', targetHbA1c: '',
   })
-  const [patientPublicId, setPatientPublicId] = useState(null)
 
   useEffect(() => {
     getMe().then(r => {
@@ -69,7 +68,6 @@ function ProfileSection() {
     })
     getMyProfile().then(r => {
       const p = r.data
-      setPatientPublicId(p.user?.publicId ?? null)
       setPatientForm({
         diabetesType: p.diabetesType ?? '',
         dateOfBirth:  p.dateOfBirth  ?? '',
@@ -87,17 +85,14 @@ function ProfileSection() {
   const save = async () => {
     setSaving(true)
     try {
+      await updateMyProfile({
+        diabetesType: patientForm.diabetesType,
+        dateOfBirth:  patientForm.dateOfBirth  || null,
+        gender:       patientForm.gender,
+      })
+
       const updatedUser = await updateMe({ name: accountForm.name, email: accountForm.email })
       authStore.setUser({ ...authStore.getUser(), name: updatedUser.data.name, email: updatedUser.data.email })
-
-      if (patientPublicId) {
-        await updateMyProfile(patientPublicId, {
-          diabetesType: patientForm.diabetesType,
-          dateOfBirth:  patientForm.dateOfBirth  || null,
-          gender:       patientForm.gender,
-          targetHbA1c:  patientForm.targetHbA1c  ? parseFloat(patientForm.targetHbA1c) : null,
-        })
-      }
       toast.success('Profile updated successfully')
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Failed to update profile')
@@ -156,7 +151,14 @@ function ProfileSection() {
           </select>
         </div>
         <InputField label="Date of Birth" type="date" value={patientForm.dateOfBirth} onChange={handlePatient('dateOfBirth')} />
-        <InputField label="Target HbA1c (%)" type="number" placeholder="e.g. 7.0" value={patientForm.targetHbA1c} onChange={handlePatient('targetHbA1c')} />
+        <div className="flex flex-col gap-1.5 mb-4">
+          <label className="text-xs font-semibold text-[#1E293B]">Target HbA1c (%)</label>
+          <div className="px-3.5 flex items-center border border-[#E2E8F0] bg-[#F8FAFB] text-sm text-[#1E293B]"
+            style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}>
+            {patientForm.targetHbA1c ? `${patientForm.targetHbA1c}%` : 'Not set by doctor'}
+          </div>
+          <p className="m-0 text-xs text-[#64748B]">Only your doctor can set or change this target.</p>
+        </div>
       </div>
 
       <div className="flex justify-end mt-2">

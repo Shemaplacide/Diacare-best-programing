@@ -74,6 +74,36 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.createAppointment(appointment));
     }
 
+    @Operation(summary = "Schedule an appointment for a patient (doctor/admin use)")
+    @PostMapping("/for-patient")
+    public ResponseEntity<Appointment> createForPatient(@Valid @RequestBody AppointmentDTO dto,
+            Authentication authentication) {
+        if (dto.getPatientPublicId() == null) {
+            throw new RuntimeException("Please select a patient");
+        }
+        Patient patient = patientRepository.findByUser_PublicId(dto.getPatientPublicId())
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        Doctor doctor = doctorRepository.findByUserEmail(authentication.getName())
+                .orElse(null);
+        if (doctor == null) {
+            if (dto.getDoctorPublicId() == null) {
+                throw new RuntimeException("Please select a doctor");
+            }
+            doctor = doctorRepository.findByUser_PublicId(dto.getDoctorPublicId())
+                    .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        }
+
+        Appointment appointment = new Appointment();
+        appointment.setPatient(patient);
+        appointment.setDoctor(doctor);
+        appointment.setAppointmentDate(dto.getAppointmentDate());
+        appointment.setNotes(dto.getNotes());
+        appointment.setStatus(dto.getStatus() != null ? dto.getStatus() : Status.CONFIRMED);
+
+        return ResponseEntity.ok(appointmentService.createAppointment(appointment));
+    }
+
     @Operation(summary = "Get appointment by ID")
     @GetMapping("/{id}")
     public ResponseEntity<Appointment> getById(@PathVariable Long id) {

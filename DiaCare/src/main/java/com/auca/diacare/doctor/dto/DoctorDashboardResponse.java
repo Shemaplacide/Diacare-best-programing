@@ -11,6 +11,7 @@ public class DoctorDashboardResponse {
     private int totalPatients;
     private int todayAppointments;
     private int pendingAppointments;
+    private int criticalPatientCount;
     private List<Appointment> upcomingAppointments;
     private List<CriticalAlert> criticalAlerts;
 
@@ -48,6 +49,9 @@ public class DoctorDashboardResponse {
 
     public int getPendingAppointments() { return pendingAppointments; }
     public void setPendingAppointments(int pendingAppointments) { this.pendingAppointments = pendingAppointments; }
+
+    public int getCriticalPatientCount() { return criticalPatientCount; }
+    public void setCriticalPatientCount(int criticalPatientCount) { this.criticalPatientCount = criticalPatientCount; }
 
     public List<Appointment> getUpcomingAppointments() { return upcomingAppointments; }
     public void setUpcomingAppointments(List<Appointment> upcomingAppointments) { this.upcomingAppointments = upcomingAppointments; }

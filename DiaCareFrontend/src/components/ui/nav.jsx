@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Menu, Bell, ChevronDown, LogOut, User, Settings, Check } from 'lucide-react'
+import { Menu, Bell, ChevronDown, LogOut, Settings, Check } from 'lucide-react'
 import { authStore } from '../../store/authStore'
 import { PAGE_TITLES } from '../../constants/nav'
 import Logo from './Logo'
@@ -148,7 +148,6 @@ export default function Header({ onToggleSidebar }) {
 
           {profileOpen && (
             <div className={dropdown} style={{ minWidth: 180, right: 0 }}>
-              <a href="/profile"  className={menuItem}><User size={14} /> My Profile</a>
               <a href="/settings" className={menuItem}><Settings size={14} /> Settings</a>
               <div className="h-px bg-[#E2E8F0] my-1" />
               <button onClick={signOut} className={`${menuItem} w-full border-0 cursor-pointer text-[#DC2626]`}>

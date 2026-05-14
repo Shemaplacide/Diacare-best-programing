@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,19 +19,29 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.auca.diacare.admin.dto.AdminDTO;
 import com.auca.diacare.admin.model.Admin;
+import com.auca.diacare.admin.repository.AdminRepository;
+import com.auca.diacare.admin.model.ActivityLog;
+import com.auca.diacare.admin.repository.ActivityLogRepository;
 import com.auca.diacare.admin.service.AdminService;
 import com.auca.diacare.appointment.model.Appointment;
 import com.auca.diacare.appointment.repository.AppointmentRepository;
 import com.auca.diacare.auth.model.User;
+import com.auca.diacare.auth.model.Role;
 import com.auca.diacare.auth.repository.UserRepository;
 import com.auca.diacare.auth.service.AuthService;
+import com.auca.diacare.chat.model.Conversation;
+import com.auca.diacare.chat.repository.ChatMessageRepository;
+import com.auca.diacare.chat.repository.ConversationRepository;
 import com.auca.diacare.doctor.repository.DoctorRepository;
 import com.auca.diacare.glucose.model.GlucoseReading;
 import com.auca.diacare.glucose.repository.GlucoseReadingRepository;
 import com.auca.diacare.metrics.model.HealthMetrics;
 import com.auca.diacare.metrics.repository.HealthMetricsRepository;
+import com.auca.diacare.mealplan.repository.MealPlanRepository;
+import com.auca.diacare.notification.repository.NotificationRepository;
 import com.auca.diacare.patient.model.Patient;
 import com.auca.diacare.patient.repository.PatientRepository;
+import com.auca.diacare.prescription.repository.PrescriptionRepository;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -42,28 +55,51 @@ import jakarta.validation.Valid;
 public class AdminController {
 
     private final AdminService adminService;
+    private final AdminRepository adminRepository;
+    private final ActivityLogRepository activityLogRepository;
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final AppointmentRepository appointmentRepository;
     private final GlucoseReadingRepository glucoseRepository;
     private final HealthMetricsRepository metricsRepository;
+    private final PrescriptionRepository prescriptionRepository;
+    private final MealPlanRepository mealPlanRepository;
+    private final ConversationRepository conversationRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final NotificationRepository notificationRepository;
     private final AuthService authService;
+    private final PasswordEncoder passwordEncoder;
 
-    public AdminController(AdminService adminService, UserRepository userRepository,
+    public AdminController(AdminService adminService, AdminRepository adminRepository,
+            ActivityLogRepository activityLogRepository, UserRepository userRepository,
             PatientRepository patientRepository, DoctorRepository doctorRepository,
             AppointmentRepository appointmentRepository,
             GlucoseReadingRepository glucoseRepository,
             HealthMetricsRepository metricsRepository,
-            AuthService authService) {
+            PrescriptionRepository prescriptionRepository,
+            MealPlanRepository mealPlanRepository,
+            ConversationRepository conversationRepository,
+            ChatMessageRepository chatMessageRepository,
+            NotificationRepository notificationRepository,
+            AuthService authService,
+            PasswordEncoder passwordEncoder) {
         this.adminService = adminService;
+        this.adminRepository = adminRepository;
+        this.activityLogRepository = activityLogRepository;
         this.userRepository = userRepository;
         this.patientRepository = patientRepository;
         this.doctorRepository = doctorRepository;
         this.appointmentRepository = appointmentRepository;
         this.glucoseRepository = glucoseRepository;
         this.metricsRepository = metricsRepository;
+        this.prescriptionRepository = prescriptionRepository;
+        this.mealPlanRepository = mealPlanRepository;
+        this.conversationRepository = conversationRepository;
+        this.chatMessageRepository = chatMessageRepository;
+        this.notificationRepository = notificationRepository;
         this.authService = authService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Operation(summary = "Register admin profile")
@@ -75,6 +111,31 @@ public class AdminController {
         admin.setUser(user);
         admin.setDepartment(dto.getDepartment());
         return ResponseEntity.ok(adminService.registerAdmin(admin));
+    }
+
+    @Operation(summary = "Get admin by public ID")
+    @GetMapping("/me")
+    public ResponseEntity<Admin> getMyProfile(Authentication authentication) {
+        return adminRepository.findByUserEmail(authentication.getName())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Operation(summary = "Update my admin profile")
+    @PutMapping("/me")
+    public ResponseEntity<Admin> updateMyProfile(Authentication authentication, @RequestBody AdminDTO dto) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Admin admin = adminRepository.findByUserEmail(authentication.getName())
+                .orElseGet(() -> {
+                    Admin created = new Admin();
+                    created.setUser(user);
+                    return created;
+                });
+        admin.setDepartment(dto.getDepartment() == null || dto.getDepartment().isBlank()
+                ? "Administration"
+                : dto.getDepartment());
+        return ResponseEntity.ok(adminRepository.save(admin));
     }
 
     @Operation(summary = "Get admin by public ID")
@@ -104,6 +165,14 @@ public class AdminController {
     @GetMapping("/dashboard")
     public ResponseEntity<Map<String, Object>> getDashboard() {
         return ResponseEntity.ok(adminService.getDashboardStats());
+    }
+
+    @Operation(summary = "Get user access activity logs")
+    @GetMapping("/activity-logs")
+    public ResponseEntity<List<ActivityLog>> getActivityLogs() {
+        return ResponseEntity.ok(activityLogRepository.findAll().stream()
+                .sorted((a, b) -> b.getLoginAt().compareTo(a.getLoginAt()))
+                .toList());
     }
 
     // User management
@@ -147,25 +216,168 @@ public class AdminController {
         req.setRole(com.auca.diacare.auth.model.Role.valueOf(body.getOrDefault("role", "DOCTOR")));
         req.setSpecialization(body.get("specialization"));
         req.setLicense_number(body.get("licenseNumber"));
+        req.setHospital(body.get("department"));
         authService.register(req);
         User created = userRepository.findByEmail(body.get("email"))
                 .orElseThrow(() -> new RuntimeException("User not found after creation"));
-        if (created.getRole() == com.auca.diacare.auth.model.Role.ADMIN) {
-            com.auca.diacare.admin.model.Admin admin = new com.auca.diacare.admin.model.Admin();
-            admin.setUser(created);
-            admin.setDepartment(body.getOrDefault("department", "Administration"));
-            adminService.registerAdmin(admin);
-        }
         return ResponseEntity.ok(created);
+    }
+
+    @Operation(summary = "Update a staff member account")
+    @PutMapping("/staff/{publicId}")
+    @Transactional
+    public ResponseEntity<User> updateStaff(@PathVariable UUID publicId, @RequestBody Map<String, Object> body) {
+        User user = userRepository.findByPublicId(publicId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getRole() == Role.PATIENT) {
+            throw new RuntimeException("Use the patient update endpoint for patient accounts");
+        }
+
+        updateUserAccount(user, body);
+
+        if (user.getRole() == Role.DOCTOR) {
+            com.auca.diacare.doctor.model.Doctor doctor = doctorRepository.findByUser_PublicId(publicId)
+                    .orElseThrow(() -> new RuntimeException("Doctor profile not found"));
+            updateDoctorFields(doctor, body);
+            doctorRepository.save(doctor);
+        }
+
+        if (user.getRole() == Role.ADMIN) {
+            Admin admin = adminRepository.findByUser_PublicId(publicId)
+                    .orElseGet(() -> {
+                        Admin created = new Admin();
+                        created.setUser(user);
+                        return created;
+                    });
+            if (body.get("department") != null && !body.get("department").toString().isBlank()) {
+                admin.setDepartment(body.get("department").toString().trim());
+            } else if (admin.getDepartment() == null || admin.getDepartment().isBlank()) {
+                admin.setDepartment("Administration");
+            }
+            adminRepository.save(admin);
+        }
+
+        return ResponseEntity.ok(userRepository.save(user));
     }
 
     @Operation(summary = "Delete a staff member")
     @DeleteMapping("/staff/{publicId}")
+    @Transactional
     public ResponseEntity<Void> deleteStaff(@PathVariable UUID publicId) {
         User user = userRepository.findByPublicId(publicId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        userRepository.delete(user);
+        deleteUserAccount(user);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Update a doctor account and professional profile")
+    @PutMapping("/doctors/{publicId}")
+    @Transactional
+    public ResponseEntity<com.auca.diacare.doctor.model.Doctor> updateDoctor(
+            @PathVariable UUID publicId,
+            @RequestBody Map<String, Object> body) {
+        com.auca.diacare.doctor.model.Doctor doctor = doctorRepository.findByUser_PublicId(publicId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        User user = doctor.getUser();
+
+        updateUserAccount(user, body);
+        updateDoctorFields(doctor, body);
+
+        userRepository.save(user);
+        return ResponseEntity.ok(doctorRepository.save(doctor));
+    }
+
+    @Operation(summary = "Delete a doctor account and related doctor data")
+    @DeleteMapping("/doctors/{publicId}")
+    @Transactional
+    public ResponseEntity<Void> deleteDoctor(@PathVariable UUID publicId) {
+        com.auca.diacare.doctor.model.Doctor doctor = doctorRepository.findByUser_PublicId(publicId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        deleteUserAccount(doctor.getUser());
+        return ResponseEntity.noContent().build();
+    }
+
+    private void deleteDoctorProfileData(com.auca.diacare.doctor.model.Doctor doctor) {
+        patientRepository.findByPreferredDoctor_Id(doctor.getId()).forEach(patient -> {
+            patient.setPreferredDoctor(null);
+            patientRepository.save(patient);
+        });
+
+        User user = doctor.getUser();
+        prescriptionRepository.deleteAll(prescriptionRepository.findByDoctor_User_Email(user.getEmail()));
+        mealPlanRepository.deleteAll(mealPlanRepository.findByDoctor_User_EmailOrderByCreatedAtDesc(user.getEmail()));
+        appointmentRepository.deleteAll(appointmentRepository.findByDoctor_User_Email(user.getEmail()));
+        doctorRepository.delete(doctor);
+    }
+
+    private void deleteUserCommunicationData(User user) {
+        List<Conversation> conversations = conversationRepository.findAllByParticipant(user.getEmail());
+        chatMessageRepository.deleteAll(chatMessageRepository.findBySender_Email(user.getEmail()));
+        conversations.forEach(conversation ->
+                chatMessageRepository.deleteAll(chatMessageRepository.findByConversation_Id(conversation.getId())));
+        conversationRepository.deleteAll(conversations);
+        notificationRepository.deleteAll(notificationRepository.findByRecipient_Email(user.getEmail()));
+    }
+
+    private void updateUserAccount(User user, Map<String, Object> body) {
+        if (body.get("name") != null && !body.get("name").toString().isBlank()) {
+            user.setUsername(body.get("name").toString().trim());
+        }
+
+        if (body.get("email") != null && !body.get("email").toString().isBlank()) {
+            String email = body.get("email").toString().trim();
+            userRepository.findByEmail(email)
+                    .filter(existing -> !existing.getId().equals(user.getId()))
+                    .ifPresent(existing -> {
+                        throw new RuntimeException("Email already in use");
+                    });
+            user.setEmail(email);
+        }
+
+        if (body.get("password") != null && !body.get("password").toString().isBlank()) {
+            user.setPassword(passwordEncoder.encode(body.get("password").toString()));
+        }
+    }
+
+    private void updateDoctorFields(com.auca.diacare.doctor.model.Doctor doctor, Map<String, Object> body) {
+        if (body.get("specialization") != null && !body.get("specialization").toString().isBlank()) {
+            doctor.setSpecialization(body.get("specialization").toString().trim());
+        }
+
+        if (body.get("licenseNumber") != null && !body.get("licenseNumber").toString().isBlank()) {
+            String licenseNumber = body.get("licenseNumber").toString().trim();
+            doctorRepository.findByLicenseNumber(licenseNumber)
+                    .filter(existing -> !existing.getId().equals(doctor.getId()))
+                    .ifPresent(existing -> {
+                        throw new RuntimeException("License number already in use");
+                    });
+            doctor.setLicenseNumber(licenseNumber);
+        }
+
+        if (body.get("yearsOfExperience") != null && !body.get("yearsOfExperience").toString().isBlank()) {
+            doctor.setYearsOfExperience(Integer.valueOf(body.get("yearsOfExperience").toString()));
+        }
+    }
+
+    private void deleteUserAccount(User user) {
+        if (user.getRole() == Role.ADMIN) {
+            long adminCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN)
+                    .count();
+            if (adminCount <= 1) {
+                throw new RuntimeException("Cannot delete the last admin account");
+            }
+        }
+
+        patientRepository.findByUser_Id(user.getId()).ifPresent(this::deletePatientProfileData);
+        doctorRepository.findByUser_Id(user.getId()).ifPresent(this::deleteDoctorProfileData);
+        adminRepository.findByUser_Id(user.getId()).ifPresent(adminRepository::delete);
+        patientRepository.flush();
+        doctorRepository.flush();
+        adminRepository.flush();
+        deleteUserCommunicationData(user);
+        userRepository.delete(user);
+        userRepository.flush();
     }
 
     @Operation(summary = "Get all patients")
@@ -176,10 +388,55 @@ public class AdminController {
 
     @Operation(summary = "Delete a patient")
     @DeleteMapping("/patients/{id}")
+    @Transactional
     public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
-        patientRepository.findById(id).orElseThrow(() -> new RuntimeException("Patient not found"));
-        patientRepository.deleteById(id);
+        Patient patient = patientRepository.findById(id).orElseThrow(() -> new RuntimeException("Patient not found"));
+        deleteUserAccount(patient.getUser());
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Update a patient account and health profile")
+    @PutMapping("/patients/{id}")
+    public ResponseEntity<Patient> updatePatient(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Patient patient = patientRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        User user = patient.getUser();
+
+        updateUserAccount(user, body);
+
+        if (body.get("diabetesType") != null)
+            patient.setDiabetesType(body.get("diabetesType").toString());
+        if (body.get("dateOfBirth") != null && !body.get("dateOfBirth").toString().isBlank())
+            patient.setDateOfBirth(java.time.LocalDate.parse(body.get("dateOfBirth").toString()));
+        if (body.get("gender") != null)
+            patient.setGender(body.get("gender").toString());
+        if (body.get("targetHbA1c") != null && !body.get("targetHbA1c").toString().isBlank())
+            patient.setTargetHbA1c(Double.valueOf(body.get("targetHbA1c").toString()));
+        if (body.get("phoneNumber") != null)
+            patient.setPhoneNumber(body.get("phoneNumber").toString());
+        if (body.get("hasAllergies") != null)
+            patient.setHasAllergies(Boolean.valueOf(body.get("hasAllergies").toString()));
+        if (body.get("allergyDetails") != null)
+            patient.setAllergyDetails(body.get("allergyDetails").toString());
+        if (Boolean.FALSE.equals(patient.getHasAllergies()))
+            patient.setAllergyDetails(null);
+        if (body.get("preferredDoctorPublicId") != null && !body.get("preferredDoctorPublicId").toString().isBlank()) {
+            patient.setPreferredDoctor(doctorRepository.findByUser_PublicId(UUID.fromString(body.get("preferredDoctorPublicId").toString()))
+                    .orElseThrow(() -> new RuntimeException("Preferred doctor not found")));
+        }
+
+        userRepository.save(user);
+        return ResponseEntity.ok(patientRepository.save(patient));
+    }
+
+    private void deletePatientProfileData(Patient patient) {
+        User user = patient.getUser();
+        prescriptionRepository.deleteAll(prescriptionRepository.findByPatient_User_Email(user.getEmail()));
+        mealPlanRepository.deleteAll(mealPlanRepository.findByPatient_User_EmailOrderByCreatedAtDesc(user.getEmail()));
+        glucoseRepository.deleteAll(glucoseRepository.findByPatient_User_Email(user.getEmail()));
+        metricsRepository.deleteAll(metricsRepository.findByPatient_User_Email(user.getEmail()));
+        appointmentRepository.deleteAll(appointmentRepository.findByPatient_User_Email(user.getEmail()));
+        patientRepository.delete(patient);
     }
 
     @Operation(summary = "Get all appointments")

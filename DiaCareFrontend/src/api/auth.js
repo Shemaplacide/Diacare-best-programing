@@ -9,16 +9,19 @@ export const login = (credentials) =>
   api.post('/auth/login', credentials)
 
 /**
- * Register
+ * Register a patient account.
  * POST /auth/register
  * @param {{
  *   name: string,
  *   email: string,
  *   password: string,
- *   is_doctor?: boolean,
- *   license_number?: string,
- *   specialization?: string,
- *   hospital?: string
+ *   role?: 'PATIENT',
+ *   diabetesType?: string,
+ *   dateOfBirth?: string,
+ *   phoneNumber?: string,
+ *   hasAllergies?: boolean,
+ *   allergyDetails?: string,
+ *   preferredDoctorPublicId?: string
  * }} data
  */
 export const register = (data) =>

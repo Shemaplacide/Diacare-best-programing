@@ -16,12 +16,14 @@ import AppLayout    from './layout/AppLayout'
 import Dashboard    from './pages/admin/Dashboard'
 import Patients     from './pages/admin/Patients'
 import Staff       from './pages/admin/Staff'
+import Doctors      from './pages/admin/Doctors'
 import GlucoseLog   from './pages/admin/GlucoseLog'
 import LabResults   from './pages/admin/LabResults'
 import Appointments from './pages/admin/Appointments'
 import Reports      from './pages/admin/Reports'
 import Settings     from './pages/admin/Settings'
 import AdminChat    from './pages/admin/Chat'
+import ActivityLogs from './pages/admin/ActivityLogs'
 
 // Doctor
 import DoctorLayout       from './layout/DoctorLayout'
@@ -67,11 +69,13 @@ export default function App() {
           <Route path="/dashboard"    element={<Dashboard />} />
           <Route path="/patients"     element={<Patients />} />
           <Route path="/staff"        element={<Staff />} />
+          <Route path="/doctors"      element={<Doctors />} />
           <Route path="/glucose"      element={<GlucoseLog />} />
           <Route path="/reports"      element={<Reports />} />
           <Route path="/lab"          element={<LabResults />} />
           <Route path="/appointments" element={<Appointments />} />
           <Route path="/chat"         element={<AdminChat />} />
+          <Route path="/activity-logs" element={<ActivityLogs />} />
           <Route path="/settings"     element={<Settings />} />
         </Route>
 

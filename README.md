@@ -10,11 +10,16 @@ The reference organization for this project is Rwanda Diabetics Association. Dia
 
 - JWT-based authentication and role-based authorization
 - Patient, doctor, and admin dashboards
-- Patient profile management
+- Admin CRUD for patients, doctors, and staff accounts, including activate, suspend, update, and delete
+- Patient profile management with read-only target HbA1c for patients
 - Glucose reading capture and history
-- Health metrics tracking, including BMI and HbA1c
-- Appointment booking, rescheduling, cancellation, and review
-- Prescription and meal plan management
+- Health metrics tracking, including BMI, HbA1c, cholesterol, and doctor-updated lab results
+- Doctor-managed target HbA1c setting, visible on the patient dashboard
+- Appointment booking by patients and appointment scheduling by doctors
+- Appointment review, rescheduling, cancellation, completion, and weekly calendar view
+- Doctor dashboard critical glucose alerts grouped by patient, with expandable alert history
+- Prescription management with insulin options `Lante`, `Rapid`, and `Abasaglar`, including three daily dose times
+- Meal plan management
 - Notifications
 - Real-time chat using WebSocket, STOMP, and SockJS
 - Patient SOS emergency messages with admin alerts and acknowledgement
@@ -39,7 +44,6 @@ shema-placid/
   DiaCareFrontend/          React/Vite frontend
   docker-compose.yml        Full stack Docker orchestration
   PROJECT_DOCUMENTATION.md  Development, Docker, and test documentation
-  STUDENT_MANUAL.md         Student-friendly explanation
   clear-db.sql              Database helper script
 ```
 
@@ -175,7 +179,9 @@ flowchart LR
     SOS[Send SOS emergency]
 
     ReviewPatients[Review patient records]
-    ManageAppointments[Manage appointments]
+    ManageAppointments[Schedule and manage appointments]
+    SetHbA1c[Set target HbA1c]
+    UpdateLabs[Add and update lab results]
     CreatePrescription[Create prescriptions]
     CreateMealPlan[Create meal plans]
     AcknowledgeSOS[Acknowledge SOS]
@@ -196,6 +202,8 @@ flowchart LR
     Doctor --> Login
     Doctor --> ReviewPatients
     Doctor --> ManageAppointments
+    Doctor --> SetHbA1c
+    Doctor --> UpdateLabs
     Doctor --> CreatePrescription
     Doctor --> CreateMealPlan
     Doctor --> Chat
@@ -448,6 +456,14 @@ flowchart LR
 | Chat | `/api/v1/chat/**` |
 | WebSocket | `/ws` |
 
+Important implemented endpoints include:
+
+- `POST /api/v1/appointments/for-patient` for doctors to schedule appointments for patients
+- `PUT /api/v1/patients/{publicId}/target-hba1c` for doctors/admins to set target HbA1c
+- `POST /api/v1/metrics/for-patient/{patientPublicId}` for doctors to add lab results
+- `PUT /api/v1/metrics/{id}` and `POST /api/v1/metrics/{id}/update` for updating lab results
+- `DELETE /api/v1/admin/doctors/{publicId}` and `PUT /api/v1/admin/doctors/{publicId}` for admin doctor CRUD
+
 ## Design Patterns And Best Practices
 
 - Repository Pattern through Spring Data JPA repositories
@@ -462,12 +478,29 @@ flowchart LR
 
 ## Testing
 
-Recommended checks:
+Automated backend tests were added under `DiaCare/src/test/java`:
+
+- `AppointmentServiceImplTest` checks appointment date validation.
+- `HealthMetricsServiceImplTest` checks lab result updates.
+- `DoctorServiceImplTest` checks that one patient with many critical glucose readings is counted once.
+
+Run automated tests:
 
 ```bash
 cd DiaCare
-mvn clean test
+./mvnw test
+```
 
+On Windows PowerShell:
+
+```powershell
+cd DiaCare
+.\mvnw.cmd test
+```
+
+Recommended additional checks:
+
+```bash
 cd ../DiaCareFrontend
 npm run build
 
@@ -480,8 +513,13 @@ Main workflows to test:
 - Register and log in as each role
 - Access protected pages with and without a token
 - Record glucose readings and health metrics
-- Book and manage appointments
-- Create and view prescriptions and meal plans
+- Book appointments as a patient
+- Schedule appointments as a doctor
+- Add and update lab results as a doctor
+- Set target HbA1c as a doctor and confirm the patient dashboard shows it
+- Confirm doctor dashboard critical alerts show one row per patient
+- Create prescriptions using Lante, Rapid, or Abasaglar with three dose times
+- Create and view meal plans
 - Send normal chat messages between two browser sessions
 - Send an SOS emergency message as a patient
 - Acknowledge SOS as doctor or admin
@@ -493,7 +531,6 @@ For academic submission, include:
 
 - This README
 - `PROJECT_DOCUMENTATION.md`
-- `STUDENT_MANUAL.md`
 - Source code for both `DiaCare` and `DiaCareFrontend`
 - `docker-compose.yml`
 - Any database helper scripts

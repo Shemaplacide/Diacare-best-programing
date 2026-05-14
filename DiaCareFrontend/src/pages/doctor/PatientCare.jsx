@@ -22,8 +22,12 @@ const PLAN_STATUS = {
   DRAFT:   { label: 'Draft',   color: '#D97706', bg: '#FFFBEB' },
 }
 const MEAL_ICONS   = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snacks: '🍎' }
-const MEDICATIONS  = ['Metformin', 'Glibenclamide', 'Insulin Glargine', 'Insulin Aspart', 'Sitagliptin', 'Empagliflozin', 'Dapagliflozin', 'Pioglitazone', 'Acarbose', 'Liraglutide']
-const FREQUENCIES  = ['Once daily', 'Twice daily', 'Three times daily', 'Once at bedtime', 'Before meals', 'With meals', 'As needed']
+const MEDICATIONS  = ['Lante', 'Rapid', 'Abasaglar']
+const EMPTY_RX_FORM = {
+  patientPublicId: '', medication: '', dosage: '',
+  doseTime1: '', doseTime2: '', doseTime3: '',
+  startDate: '', endDate: '', instructions: '',
+}
 const DIABETES_TYPES = ['Type 1', 'Type 2', 'Gestational', 'Prediabetes']
 const CALORIE_GOALS  = ['1200 kcal', '1500 kcal', '1800 kcal', '2000 kcal', '2200 kcal', '2500 kcal']
 
@@ -73,6 +77,17 @@ function TextArea({ label, value, onChange, placeholder, rows = 2 }) {
 }
 
 // ── Prescriptions tab ──────────────────────────────────────────────────────
+function getDoseTimes(instructions = '') {
+  const match = instructions.match(/Dose times:\s*([^\n]+)/i)
+  return match?.[1] ?? ''
+}
+
+function buildPrescriptionInstructions(form) {
+  const doseTimes = [form.doseTime1, form.doseTime2, form.doseTime3].filter(Boolean).join(', ')
+  const notes = form.instructions?.trim()
+  return `Dose times: ${doseTimes}${notes ? `\nNotes: ${notes}` : ''}`
+}
+
 function PrescriptionsTab({ patients, doctorPublicId }) {
   const [items,     setItems]     = useState([])
   const [loading,   setLoading]   = useState(true)
@@ -81,10 +96,7 @@ function PrescriptionsTab({ patients, doctorPublicId }) {
   const [expanded,  setExpanded]  = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [saving,    setSaving]    = useState(false)
-  const [form,      setForm]      = useState({
-    patientPublicId: '', medication: '', dosage: '', frequency: '',
-    startDate: '', endDate: '', instructions: '',
-  })
+  const [form,      setForm]      = useState(EMPTY_RX_FORM)
   const handle = f => e => setForm(p => ({ ...p, [f]: e.target.value }))
 
   const load = () => {
@@ -113,7 +125,7 @@ function PrescriptionsTab({ patients, doctorPublicId }) {
   })
 
   const submit = async () => {
-    if (!form.patientPublicId || !form.medication || !form.dosage || !form.frequency || !form.startDate) {
+    if (!form.patientPublicId || !form.medication || !form.dosage || !form.doseTime1 || !form.doseTime2 || !form.doseTime3 || !form.startDate) {
       toast.error('Fill in all required fields'); return
     }
     setSaving(true)
@@ -123,14 +135,13 @@ function PrescriptionsTab({ patients, doctorPublicId }) {
         doctorPublicId,
         medication:   form.medication,
         dosage:       form.dosage,
-        frequency:    form.frequency,
         startDate:    form.startDate,
         endDate:      form.endDate || null,
-        instructions: form.instructions,
+        instructions: buildPrescriptionInstructions(form),
       })
       toast.success('Prescription issued')
       setModalOpen(false)
-      setForm({ patientPublicId: '', medication: '', dosage: '', frequency: '', startDate: '', endDate: '', instructions: '' })
+      setForm(EMPTY_RX_FORM)
       load()
     } catch (err) {
       toast.error(err.response?.data?.message ?? 'Failed to issue prescription')
@@ -162,7 +173,7 @@ function PrescriptionsTab({ patients, doctorPublicId }) {
             </div>
           ))}
         </div>
-        <Button size="md" onClick={() => { setForm({ patientPublicId: '', medication: '', dosage: '', frequency: '', startDate: '', endDate: '', instructions: '' }); setModalOpen(true) }}>
+        <Button size="md" onClick={() => { setForm(EMPTY_RX_FORM); setModalOpen(true) }}>
           <Plus size={14} /> Issue
         </Button>
       </div>
@@ -199,6 +210,7 @@ function PrescriptionsTab({ patients, doctorPublicId }) {
                   {[
                     ['Patient',    rx.patient?.user?.username ?? '—'],
                     ['Dosage',     rx.dosage],
+                    ['Dose Times', getDoseTimes(rx.instructions) || 'Not set'],
                     ['Start Date', rx.startDate],
                     ['End Date',   rx.endDate || 'Ongoing'],
                     ['Status',     <StatusBadge status={rx.status} map={RX_STATUS} />],
@@ -240,7 +252,11 @@ function PrescriptionsTab({ patients, doctorPublicId }) {
           <SelectField label="Medication *" value={form.medication} onChange={handle('medication')} options={MEDICATIONS} />
           <div className="grid grid-cols-2 gap-x-4">
             <InputField label="Dosage *" placeholder="e.g. 500mg" value={form.dosage} onChange={handle('dosage')} />
-            <SelectField label="Frequency *" value={form.frequency} onChange={handle('frequency')} options={FREQUENCIES} />
+            <InputField label="First Time *" type="time" value={form.doseTime1} onChange={handle('doseTime1')} />
+          </div>
+          <div className="grid grid-cols-2 gap-x-4">
+            <InputField label="Second Time *" type="time" value={form.doseTime2} onChange={handle('doseTime2')} />
+            <InputField label="Third Time *" type="time" value={form.doseTime3} onChange={handle('doseTime3')} />
           </div>
           <div className="grid grid-cols-2 gap-x-4">
             <InputField label="Start Date *" type="date" value={form.startDate} onChange={handle('startDate')} />

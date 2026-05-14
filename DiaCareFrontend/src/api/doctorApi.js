@@ -3,12 +3,16 @@ import api from './axios'
 // Dashboard
 export const getDoctorDashboard  = ()     => api.get('/doctors/dashboard')
 export const getDoctorProfile    = ()     => api.get('/doctors/me')
+export const updateDoctorProfile = (data) => api.put('/doctors/me', data)
 
 // Patients
 export const getMyPatients       = ()     => api.get('/doctors/my-patients')
+export const updatePatientTargetHbA1c = (patientPublicId, targetHbA1c) =>
+  api.put(`/patients/${patientPublicId}/target-hba1c`, { targetHbA1c })
 
 // Appointments
 export const getMyAppointments   = ()     => api.get('/appointments/my')
+export const createAppointmentForPatient = (data) => api.post('/appointments/for-patient', data)
 export const updateApptStatus    = (id, status) =>
   api.put(`/appointments/${id}/status`, JSON.stringify(status), { headers: { 'Content-Type': 'application/json' } })
 export const rescheduleAppt      = (id, newDate) =>
@@ -32,3 +36,5 @@ export const deleteMealPlan      = (id)   => api.delete(`/meal-plans/${id}`)
 export const getMyMetrics        = ()           => api.get('/metrics/history')
 export const getAllMetrics        = ()           => api.get('/metrics/all')
 export const recordMetrics       = (patientPublicId, data) => api.post(`/metrics/for-patient/${patientPublicId}`, data)
+export const updateMetrics       = (id, data) => api.post(`/metrics/${id}/update`, data)
+export const deleteMetrics       = (id) => api.delete(`/metrics/${id}`)

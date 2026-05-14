@@ -15,19 +15,9 @@ import {
   getAdminDashboard, getAllPatients, getAllAppointments,
   getAllGlucose, getAllMetrics,
 } from '../../api/admin'
+import { downloadPdfReport } from '../../utils/pdfReport'
 
-// ── CSV helpers ───────────────────────────────────────────────────────────────
-function toCSV(headers, rows) {
-  const esc = (v) => { const s = String(v ?? '').replace(/"/g, '""'); return s.includes(',') || s.includes('\n') ? `"${s}"` : s }
-  return [headers.join(','), ...rows.map(r => r.map(esc).join(','))].join('\n')
-}
-function downloadCSV(name, csv) {
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })),
-    download: name,
-  })
-  a.click()
-}
+// Report helpers
 
 // ── Chart tooltips ────────────────────────────────────────────────────────────
 const ChartTip = ({ active, payload, label, unit = '' }) => {
@@ -103,22 +93,30 @@ const PIE_COLORS    = ['#0A4174', '#16A34A', '#7C3AED', '#D97706', '#0891B2']
 
 const EXPORTS = [
   {
-    id: 'patients', label: 'Patients CSV',
+    id: 'patients', label: 'Patients PDF',
+    title: 'DiaCare Patients Report',
+    description: 'A readable list of registered patients and their key profile information.',
     headers: ['Name', 'Email', 'Diabetes Type', 'Gender', 'DOB', 'Target HbA1c', 'Registered'],
     rows: (d) => d.patients.map(p => [p.user?.username, p.user?.email, p.diabetesType, p.gender, p.dateOfBirth, p.targetHbA1c, p.createdAt?.slice(0, 10)]),
   },
   {
-    id: 'appointments', label: 'Appointments CSV',
+    id: 'appointments', label: 'Appointments PDF',
+    title: 'DiaCare Appointments Report',
+    description: 'A readable list of appointments, assigned doctors, appointment time, status, and notes.',
     headers: ['Patient', 'Doctor', 'Date', 'Time', 'Status', 'Notes'],
     rows: (d) => d.appointments.map(a => [a.patient?.user?.username, a.doctor?.user?.username, a.appointmentDate?.split('T')[0], a.appointmentDate?.split('T')[1]?.slice(0, 5), a.status, a.notes]),
   },
   {
-    id: 'glucose', label: 'Glucose CSV',
+    id: 'glucose', label: 'Glucose PDF',
+    title: 'DiaCare Glucose Report',
+    description: 'A readable list of glucose readings, measurement context, units, and recording times.',
     headers: ['Patient', 'Value', 'Unit', 'Context', 'Recorded At'],
     rows: (d) => d.glucose.map(g => [g.patient?.user?.username, g.value, g.unit, g.mealContext?.replace(/_/g, ' '), g.recordedAt?.replace('T', ' ').slice(0, 16)]),
   },
   {
-    id: 'lab', label: 'Lab Results CSV',
+    id: 'lab', label: 'Lab Results PDF',
+    title: 'DiaCare Lab Results Report',
+    description: 'A readable list of patient lab measurements including HbA1c, BMI, blood pressure, and cholesterol.',
     headers: ['Patient', 'HbA1c%', 'Weight kg', 'Height cm', 'BMI', 'BP Sys', 'BP Dia', 'Cholesterol', 'Recorded At'],
     rows: (d) => d.metrics.map(m => [m.patient?.user?.username, m.hba1c, m.weight, m.height, m.bmi, m.bloodPressureSystolic, m.bloodPressureDiastolic, m.cholesterol, m.recordedAt?.replace('T', ' ').slice(0, 16)]),
   },
@@ -145,7 +143,23 @@ export default function Reports() {
     if (!allData) return
     setExporting(exp.id)
     try {
-      downloadCSV(`diacare-${exp.id}-${new Date().toISOString().slice(0, 10)}.csv`, toCSV(exp.headers, exp.rows(allData)))
+      const rows = exp.rows(allData)
+      downloadPdfReport(`diacare-${exp.id}-${new Date().toISOString().slice(0, 10)}.pdf`, {
+        title: exp.title,
+        subtitle: exp.description,
+        summary: [
+          { label: 'Records included', value: rows.length },
+          { label: 'Report type', value: exp.label.replace(' PDF', '') },
+        ],
+        sections: [{
+          title: 'Report Records',
+          description: 'Each record is written in a clear field-by-field format for easy reading and sharing.',
+          rows: rows.map((row, index) => ({
+            title: `${exp.label.replace(' PDF', '')} Record ${index + 1}`,
+            fields: exp.headers.map((header, i) => ({ label: header, value: row[i] })),
+          })),
+        }],
+      })
       toast.success(`${exp.label} downloaded`)
     } catch { toast.error('Export failed') }
     finally { setExporting(null) }

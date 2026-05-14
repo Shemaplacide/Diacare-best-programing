@@ -5,7 +5,7 @@ import Modal from '../../components/ui/Modal'
 import InputField from '../../components/ui/InputField'
 import Button from '../../components/ui/Button'
 import { StatusBadge, APPOINTMENT_STATUS } from '../../constants/status'
-import { getMyAppointments, updateApptStatus, rescheduleAppt, cancelAppt } from '../../api/doctorApi'
+import { createAppointmentForPatient, getMyAppointments, getMyPatients, updateApptStatus, rescheduleAppt, cancelAppt } from '../../api/doctorApi'
 
 const DAYS  = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const HOURS = Array.from({ length: 10 }, (_, i) => i + 8)
@@ -22,17 +22,23 @@ export default function DoctorAppointments() {
   const [view,           setView]           = useState('week')
   const [weekBase,       setWeekBase]       = useState(new Date())
   const [appts,          setAppts]          = useState([])
+  const [patients,       setPatients]       = useState([])
   const [loading,        setLoading]        = useState(true)
   const [selected,       setSelected]       = useState(null)
   const [detailOpen,     setDetailOpen]     = useState(false)
+  const [scheduleOpen,   setScheduleOpen]   = useState(false)
+  const [scheduleForm,   setScheduleForm]   = useState({ patientPublicId: '', date: '', time: '', notes: '' })
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [rescheduleForm, setRescheduleForm] = useState({ date: '', time: '' })
   const [saving,         setSaving]         = useState(false)
 
   const load = () => {
     setLoading(true)
-    getMyAppointments()
-      .then(r => setAppts(r.data))
+    Promise.all([getMyAppointments(), getMyPatients()])
+      .then(([a, p]) => {
+        setAppts(a.data)
+        setPatients(p.data)
+      })
       .catch(() => toast.error('Failed to load appointments'))
       .finally(() => setLoading(false))
   }
@@ -43,6 +49,38 @@ export default function DoctorAppointments() {
   const today     = fmt(new Date())
   const prevWeek  = () => { const d = new Date(weekBase); d.setDate(d.getDate() - 7); setWeekBase(d) }
   const nextWeek  = () => { const d = new Date(weekBase); d.setDate(d.getDate() + 7); setWeekBase(d) }
+
+  const openSchedule = (date = '', time = '') => {
+    setScheduleForm({ patientPublicId: '', date, time, notes: '' })
+    setScheduleOpen(true)
+  }
+
+  const doSchedule = async () => {
+    if (!scheduleForm.patientPublicId || !scheduleForm.date || !scheduleForm.time) {
+      toast.error('Select a patient, date, and time')
+      return
+    }
+    const day = new Date(scheduleForm.date).getDay()
+    if (day === 0 || day === 6) { toast.error('Weekdays only (Mon-Fri)'); return }
+    const hour = parseInt(scheduleForm.time.split(':')[0])
+    if (hour < 9 || hour >= 18) { toast.error('Must be between 9:00 AM and 6:00 PM'); return }
+    setSaving(true)
+    try {
+      await createAppointmentForPatient({
+        patientPublicId: scheduleForm.patientPublicId,
+        appointmentDate: `${scheduleForm.date}T${scheduleForm.time}:00`,
+        status: 'CONFIRMED',
+        notes: scheduleForm.notes,
+      })
+      toast.success('Appointment scheduled')
+      setScheduleOpen(false)
+      load()
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Failed to schedule appointment')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const changeStatus = async (id, status) => {
     try {
@@ -91,14 +129,19 @@ export default function DoctorAppointments() {
             {appts.filter(a => a.status === 'PENDING' || a.status === 'CONFIRMED').length} upcoming
           </p>
         </div>
-        <div className="flex items-center bg-[#F1F5F9] rounded-xl p-1 gap-1">
-          {['week', 'list'].map(v => (
-            <button key={v} onClick={() => setView(v)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border-0 cursor-pointer transition
-                ${view === v ? 'bg-white text-[#0A4174] shadow-sm' : 'bg-transparent text-[#64748B]'}`}>
-              {v === 'week' ? <><Calendar size={13} /> Week</> : <><List size={13} /> List</>}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <Button size="md" onClick={() => openSchedule()}>
+            <Plus size={15} /> Schedule
+          </Button>
+          <div className="flex items-center bg-[#F1F5F9] rounded-xl p-1 gap-1">
+            {['week', 'list'].map(v => (
+              <button key={v} onClick={() => setView(v)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border-0 cursor-pointer transition
+                  ${view === v ? 'bg-white text-[#0A4174] shadow-sm' : 'bg-transparent text-[#64748B]'}`}>
+                {v === 'week' ? <><Calendar size={13} /> Week</> : <><List size={13} /> List</>}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -143,7 +186,12 @@ export default function DoctorAppointments() {
                   const slotAppts = getApptsForSlot(d, hour)
                   const isToday   = fmt(d) === today
                   return (
-                    <div key={di} className={`p-1 border-r border-[#E2E8F0] last:border-r-0 ${isToday ? 'bg-[#EFF6F8]/40' : ''}`}>
+                    <div
+                      key={di}
+                      onDoubleClick={() => openSchedule(fmt(d), `${String(hour).padStart(2, '0')}:00`)}
+                      className={`p-1 border-r border-[#E2E8F0] last:border-r-0 ${isToday ? 'bg-[#EFF6F8]/40' : ''}`}
+                      title="Double-click to schedule"
+                    >
                       {slotAppts.map(a => {
                         const color = STATUS_COLORS[a.status] ?? '#0A4174'
                         return (
@@ -205,6 +253,37 @@ export default function DoctorAppointments() {
           })}
         </div>
       )}
+
+      {/* Schedule modal */}
+      <Modal open={scheduleOpen} onClose={() => setScheduleOpen(false)}
+        title="Schedule Appointment" subtitle="Create an appointment for one of your patients" width={520}
+        footer={<><Button variant="ghost" onClick={() => setScheduleOpen(false)}>Cancel</Button><Button onClick={doSchedule} disabled={saving}><CalendarClock size={14} /> {saving ? 'Scheduling...' : 'Schedule'}</Button></>}>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5 mb-4">
+            <label className="text-xs font-semibold text-[#1E293B]">Patient *</label>
+            <select value={scheduleForm.patientPublicId} onChange={e => setScheduleForm(p => ({ ...p, patientPublicId: e.target.value }))}
+              style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}
+              className="px-3.5 border border-[#E2E8F0] bg-white text-sm text-[#1E293B] font-[inherit] outline-none focus:border-[#0A4174] w-full">
+              <option value="">Select patient</option>
+              {patients.map(p => <option key={p.user?.publicId} value={p.user?.publicId}>{p.user?.username}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-x-4">
+            <InputField label="Date *" type="date" value={scheduleForm.date} onChange={e => setScheduleForm(p => ({ ...p, date: e.target.value }))} />
+            <InputField label="Time *" type="time" value={scheduleForm.time} onChange={e => setScheduleForm(p => ({ ...p, time: e.target.value }))} />
+          </div>
+          <div className="rounded-xl bg-[#EFF6F8] border border-[#BFDBFE] px-3 py-2 mb-3">
+            <p className="m-0 text-xs font-semibold text-[#0A4174]">Appointments are available Monday to Friday, 9:00 AM to 6:00 PM.</p>
+          </div>
+          <div className="flex flex-col gap-1.5 mb-3">
+            <label className="text-xs font-semibold text-[#1E293B]">Notes</label>
+            <textarea value={scheduleForm.notes} onChange={e => setScheduleForm(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Reason for visit, follow-up details, or preparation notes..."
+              rows={3}
+              className="px-3.5 py-2.5 border border-[#E2E8F0] bg-white text-sm text-[#1E293B] font-[inherit] outline-none focus:border-[#0A4174] w-full rounded-xl resize-none" />
+          </div>
+        </div>
+      </Modal>
 
       {/* Detail modal */}
       {selected && (

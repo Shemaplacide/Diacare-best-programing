@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { Eye, EyeOff } from 'lucide-react'
@@ -6,8 +6,8 @@ import AuthLayout from './AuthLayout'
 import InputField from '../../components/ui/InputField'
 import Button from '../../components/ui/Button'
 import SocialButton from '../../components/ui/SocialButton'
-import { SPECIALIZATIONS } from '../../constants/auth'
 import { register } from '../../api/auth'
+import { getAllDoctors } from '../../api/doctor'
 import { authStore } from '../../store/authStore'
 import { validateRegister } from '../../utils/validate'
 
@@ -18,15 +18,23 @@ export default function Register() {
   const navigate              = useNavigate()
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
-  const [isDoctor, setIsDoctor] = useState(false)
   const [errors, setErrors]   = useState({})
+  const [doctors, setDoctors] = useState([])
   const attempts = useRef(0)
   const lockedAt = useRef(null)
 
   const [form, setForm] = useState({
     name: '', email: '', password: '', confirmPassword: '',
     licenseNumber: '', specialization: '', hospital: '',
+    diabetesType: '', dateOfBirth: '', phoneNumber: '', hasAllergies: 'NO', allergyDetails: '',
+    preferredDoctorPublicId: '',
   })
+
+  useEffect(() => {
+    getAllDoctors()
+      .then(r => setDoctors(r.data ?? []))
+      .catch(() => setDoctors([]))
+  }, [])
 
   const handle = (field) => (e) => {
     setForm(prev => ({ ...prev, [field]: e.target.value }))
@@ -42,11 +50,13 @@ export default function Register() {
       return
     }
 
+    const role = 'PATIENT'
+    const isDoctor = false
     const fieldErrors = validateRegister(form, isDoctor, {
       licenseNumber: form.licenseNumber,
       specialization: form.specialization,
       hospital: form.hospital,
-    })
+    }, role)
     if (Object.keys(fieldErrors).length) { setErrors(fieldErrors); return }
 
     setLoading(true)
@@ -55,6 +65,15 @@ export default function Register() {
         name:     form.name.trim(),
         email:    form.email.trim(),
         password: form.password,
+        role: 'PATIENT',
+        ...(role === 'PATIENT' && {
+          diabetesType: form.diabetesType,
+          dateOfBirth: form.dateOfBirth || null,
+          phoneNumber: form.phoneNumber.trim(),
+          hasAllergies: form.hasAllergies === 'YES',
+          allergyDetails: form.hasAllergies === 'YES' ? form.allergyDetails.trim() : '',
+          preferredDoctorPublicId: form.preferredDoctorPublicId || null,
+        }),
         ...(isDoctor && {
           is_doctor:      true,
           license_number: form.licenseNumber.trim(),
@@ -90,10 +109,97 @@ export default function Register() {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col">
         <h2 className="text-3xl font-bold tracking-tight text-[#1E293B] mb-1">Create account</h2>
-        <p className="text-sm text-[#64748B] mb-7">Join DiaCare and start managing patients</p>
+        <p className="text-sm text-[#64748B] mb-5">Create your patient account</p>
 
         <InputField label="Full Name" type="text"  placeholder="Jane Smith"      value={form.name}  onChange={handle('name')}  autoComplete="name"  error={errors.name} />
         <InputField label="Email"     type="email" placeholder="you@diacare.com" value={form.email} onChange={handle('email')} autoComplete="email" error={errors.email} />
+
+        <div className="flex flex-col p-4 rounded-xl bg-[#EFF6F8] border border-[#BDD8E9] mb-4 gap-1">
+            <p className="text-xs font-semibold text-[#0A4174] mb-2">Patient information</p>
+
+            <InputField
+              label="Telephone Number"
+              type="tel"
+              placeholder="+250 78 000 0000"
+              value={form.phoneNumber}
+              onChange={handle('phoneNumber')}
+              error={errors.phoneNumber}
+            />
+
+            <div className="flex flex-col gap-1.5 mb-4">
+              <label className="text-xs font-semibold text-[#1E293B]">Diabetes Type</label>
+              <select
+                value={form.diabetesType}
+                onChange={handle('diabetesType')}
+                style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}
+                className={`px-3.5 border bg-white text-sm text-[#1E293B] font-[inherit] outline-none transition w-full
+                  ${errors.diabetesType
+                    ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-2 focus:ring-[#FFF1F0]'
+                    : 'border-[#E2E8F0] focus:border-[#0A4174] focus:ring-2 focus:ring-[#ECFEFF]'}`}
+              >
+                <option value="">Select diabetes type</option>
+                <option value="TYPE_1">Type 1</option>
+                <option value="TYPE_2">Type 2</option>
+                <option value="GESTATIONAL">Gestational</option>
+                <option value="PREDIABETES">Prediabetes</option>
+                <option value="Unknown">I am not sure</option>
+              </select>
+              {errors.diabetesType && <p className="text-xs text-[#DC2626] mt-0.5">{errors.diabetesType}</p>}
+            </div>
+
+            <InputField
+              label="Date of Birth"
+              type="date"
+              value={form.dateOfBirth}
+              onChange={handle('dateOfBirth')}
+              error={errors.dateOfBirth}
+            />
+
+            <div className="flex flex-col gap-1.5 mb-4">
+              <label className="text-xs font-semibold text-[#1E293B]">Preferred Doctor</label>
+              <select
+                value={form.preferredDoctorPublicId}
+                onChange={handle('preferredDoctorPublicId')}
+                style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}
+                className={`px-3.5 border bg-white text-sm text-[#1E293B] font-[inherit] outline-none transition w-full
+                  ${errors.preferredDoctorPublicId
+                    ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-2 focus:ring-[#FFF1F0]'
+                    : 'border-[#E2E8F0] focus:border-[#0A4174] focus:ring-2 focus:ring-[#ECFEFF]'}`}
+              >
+                <option value="">{doctors.length === 0 ? 'No doctors available yet' : 'Select a doctor'}</option>
+                {doctors.map(doctor => (
+                  <option key={doctor.id} value={doctor.user?.publicId}>
+                    Dr. {doctor.user?.username} - {doctor.specialization}
+                  </option>
+                ))}
+              </select>
+              {errors.preferredDoctorPublicId && <p className="text-xs text-[#DC2626] mt-0.5">{errors.preferredDoctorPublicId}</p>}
+            </div>
+
+            <div className="flex flex-col gap-1.5 mb-4">
+              <label className="text-xs font-semibold text-[#1E293B]">Do you have allergies?</label>
+              <select
+                value={form.hasAllergies}
+                onChange={handle('hasAllergies')}
+                style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}
+                className="px-3.5 border border-[#E2E8F0] bg-white text-sm text-[#1E293B] font-[inherit] outline-none transition w-full focus:border-[#0A4174] focus:ring-2 focus:ring-[#ECFEFF]"
+              >
+                <option value="NO">No</option>
+                <option value="YES">Yes</option>
+              </select>
+            </div>
+
+            {form.hasAllergies === 'YES' && (
+              <InputField
+                label="Allergy Details"
+                type="text"
+                placeholder="e.g. Penicillin, peanuts"
+                value={form.allergyDetails}
+                onChange={handle('allergyDetails')}
+                error={errors.allergyDetails}
+              />
+            )}
+        </div>
 
         {/* Password with show/hide */}
         <div className="flex flex-col gap-1.5 mb-4">
@@ -136,66 +242,6 @@ export default function Register() {
           />
           {errors.confirmPassword && <p className="text-xs text-[#DC2626] mt-0.5">{errors.confirmPassword}</p>}
         </div>
-
-        {/* Doctor checkbox */}
-        <label className="flex items-center gap-3 mb-5 cursor-pointer select-none">
-          <div
-            onClick={() => { setIsDoctor(p => !p); setErrors({}) }}
-            style={{ borderRadius: 'var(--radius-sm)', width: 18, height: 18, minWidth: 18 }}
-            className={`border-2 flex items-center justify-center transition
-              ${isDoctor ? 'bg-[#0A4174] border-[#0A4174]' : 'bg-white border-[#CBD5E1]'}`}
-          >
-            {isDoctor && (
-              <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                <path d="M1 4l3 3 5-6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-          </div>
-          <span className="text-sm font-medium text-[#1E293B]">I am a licensed medical professional</span>
-        </label>
-
-        {/* Doctor extra fields */}
-        {isDoctor && (
-          <div className="flex flex-col p-4 rounded-xl bg-[#EFF6F8] border border-[#BDD8E9] mb-4 gap-1">
-            <p className="text-xs font-semibold text-[#0A4174] mb-2">Medical credentials</p>
-
-            <InputField
-              label="License Number"
-              type="text"
-              placeholder="e.g. MD-123456"
-              value={form.licenseNumber}
-              onChange={handle('licenseNumber')}
-              error={errors.licenseNumber}
-            />
-
-            {/* Specialization select */}
-            <div className="flex flex-col gap-1.5 mb-4">
-              <label className="text-xs font-semibold text-[#1E293B]">Specialization</label>
-              <select
-                value={form.specialization}
-                onChange={handle('specialization')}
-                style={{ height: 'var(--input-h-desktop)', borderRadius: 'var(--radius-md)' }}
-                className={`px-3.5 border bg-white text-sm text-[#1E293B] font-[inherit] outline-none transition w-full
-                  ${errors.specialization
-                    ? 'border-[#DC2626] focus:border-[#DC2626] focus:ring-2 focus:ring-[#FFF1F0]'
-                    : 'border-[#E2E8F0] focus:border-[#0A4174] focus:ring-2 focus:ring-[#ECFEFF]'}`}
-              >
-                <option value="">Select specialization</option>
-                {SPECIALIZATIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-              {errors.specialization && <p className="text-xs text-[#DC2626] mt-0.5">{errors.specialization}</p>}
-            </div>
-
-            <InputField
-              label="Hospital / Clinic"
-              type="text"
-              placeholder="e.g. Kigali University Hospital"
-              value={form.hospital}
-              onChange={handle('hospital')}
-              error={errors.hospital}
-            />
-          </div>
-        )}
 
         <Button type="submit" full disabled={loading}>
           {loading ? 'Creating account...' : 'Create Account'}

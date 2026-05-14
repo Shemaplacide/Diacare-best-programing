@@ -14,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
@@ -63,9 +64,20 @@ public class HealthMetrics {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         if (recordedAt == null) recordedAt = LocalDateTime.now();
+        recalculateBmi();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        recalculateBmi();
+    }
+
+    private void recalculateBmi() {
         if (weight != null && height != null && height > 0) {
             double heightM = height / 100.0;
             bmi = Math.round((weight / (heightM * heightM)) * 10.0) / 10.0;
+        } else {
+            bmi = null;
         }
     }
 

@@ -11,7 +11,7 @@ const FLOWS = {
     { icon: LineChart,  step: '03', title: 'Track your glucose', desc: 'Log readings and meals. DiaCare surfaces patterns so you always know where you stand.' },
   ],
   doctor: [
-    { icon: ShieldCheck,   step: '01', title: 'Register & verify', desc: 'Create your account, pick your specialization, and get verified before going live.' },
+    { icon: ShieldCheck,   step: '01', title: 'Admin-created access', desc: 'A system admin creates and verifies each doctor account before it can be used.' },
     { icon: ClipboardList, step: '02', title: 'Manage patients',   desc: 'View glucose logs, labs, prescriptions, and meal plans — all in one place.', dark: true },
     { icon: Bell,          step: '03', title: 'Monitor & act',     desc: 'Get alerts on critical readings. Track trends and schedule follow-ups from your dashboard.' },
   ],

@@ -20,6 +20,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
 
     // this will be used just by doctors and anmins for analyzing patients with specific diabetes type
     List<Patient> findByDiabetesType(String diabetesType);
+    List<Patient> findByPreferredDoctor_Id(Long doctorId);
     
  
 }

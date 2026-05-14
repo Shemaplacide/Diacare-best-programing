@@ -3,6 +3,8 @@ package com.auca.diacare.auth.dto;
 import com.auca.diacare.auth.model.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
+import java.util.UUID;
 // import lombok.Data;
 
 // @Data
@@ -28,6 +30,16 @@ public class RegisterRequest {
     private String specialization;
     private String hospital;
 
+    // Patient-specific fields
+    private LocalDate dateOfBirth;
+    private String phoneNumber;
+    private String diabetesType;
+    private String gender;
+    private Double targetHbA1c;
+    private Boolean hasAllergies;
+    private String allergyDetails;
+    private UUID preferredDoctorPublicId;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
@@ -51,4 +63,28 @@ public class RegisterRequest {
 
     public String getHospital() { return hospital; }
     public void setHospital(String hospital) { this.hospital = hospital; }
+
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public String getDiabetesType() { return diabetesType; }
+    public void setDiabetesType(String diabetesType) { this.diabetesType = diabetesType; }
+
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+
+    public Double getTargetHbA1c() { return targetHbA1c; }
+    public void setTargetHbA1c(Double targetHbA1c) { this.targetHbA1c = targetHbA1c; }
+
+    public Boolean getHasAllergies() { return hasAllergies; }
+    public void setHasAllergies(Boolean hasAllergies) { this.hasAllergies = hasAllergies; }
+
+    public String getAllergyDetails() { return allergyDetails; }
+    public void setAllergyDetails(String allergyDetails) { this.allergyDetails = allergyDetails; }
+
+    public UUID getPreferredDoctorPublicId() { return preferredDoctorPublicId; }
+    public void setPreferredDoctorPublicId(UUID preferredDoctorPublicId) { this.preferredDoctorPublicId = preferredDoctorPublicId; }
 }

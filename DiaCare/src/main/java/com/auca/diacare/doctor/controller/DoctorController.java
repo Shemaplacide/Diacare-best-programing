@@ -92,6 +92,18 @@ public class DoctorController {
     }
 
     @Operation(summary = "Update doctor profile")
+    @PutMapping("/me")
+    public ResponseEntity<Doctor> updateMyProfile(Authentication authentication, @RequestBody DoctorDTO dto) {
+        Doctor doctor = doctorService.getDoctorByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Doctor profile not found"));
+        Doctor details = new Doctor();
+        details.setSpecialization(dto.getSpecialization());
+        details.setLicenseNumber(dto.getLicenseNumber());
+        details.setYearsOfExperience(dto.getYearsOfExperience());
+        return ResponseEntity.ok(doctorService.updateDoctorProfile(doctor.getUser().getPublicId(), details));
+    }
+
+    @Operation(summary = "Update doctor profile by public ID")
     @PutMapping("/{publicId}")
     public ResponseEntity<Doctor> update(@PathVariable UUID publicId, @Valid @RequestBody DoctorDTO dto) {
         Doctor details = new Doctor();

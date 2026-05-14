@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Eye, Activity, Calendar, Pill, Utensils, ChevronDown, ChevronUp } from 'lucide-react'
+import { User, Eye, Activity, Calendar, Pill, Target } from 'lucide-react'
 import { toast } from 'react-toastify'
 import DataTable from '../../components/ui/DataTable'
 import DetailsDrawer, { drawerPrimaryBtn, drawerOutlineBtn } from '../../components/ui/DetailsDrawer'
 import PageHeader from '../../components/ui/PageHeader'
 import FilterBar from '../../components/ui/FilterBar'
-import { StatusBadge, GLUCOSE_STATUS, classifyGlucose } from '../../constants/status'
-import { getMyPatients } from '../../api/doctorApi'
+import Modal from '../../components/ui/Modal'
+import InputField from '../../components/ui/InputField'
+import Button from '../../components/ui/Button'
+import { getMyPatients, updatePatientTargetHbA1c } from '../../api/doctorApi'
 
 const PAGE_SIZE = 10
 
@@ -48,12 +50,20 @@ export default function MyPatients() {
   const [page,        setPage]        = useState(1)
   const [selected,    setSelected]    = useState(null)
   const [drawerOpen,  setDrawerOpen]  = useState(false)
+  const [targetOpen,  setTargetOpen]  = useState(false)
+  const [targetValue, setTargetValue] = useState('')
+  const [savingTarget, setSavingTarget] = useState(false)
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true)
     getMyPatients()
       .then(r => setPatients(r.data))
       .catch(() => toast.error('Failed to load patients'))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    load()
   }, [])
 
   const filtered = patients.filter(p => {
@@ -69,10 +79,38 @@ export default function MyPatients() {
 
   const rowActions = (row) => [
     { label: 'View Profile',     icon: <Eye size={14} />,      onClick: () => { setSelected(row); setDrawerOpen(true) } },
+    { label: 'Set HbA1c Target', icon: <Target size={14} />,   onClick: () => openTarget(row) },
     { label: 'Log Glucose',      icon: <Activity size={14} />, onClick: () => navigate('/doctor/glucose') },
     { label: 'Book Appointment', icon: <Calendar size={14} />, onClick: () => navigate('/doctor/appointments') },
     { label: 'Prescribe',        icon: <Pill size={14} />,     onClick: () => navigate('/doctor/patient-care') },
   ]
+
+  const openTarget = (patient) => {
+    setSelected(patient)
+    setTargetValue(patient.targetHbA1c ?? '')
+    setTargetOpen(true)
+  }
+
+  const saveTarget = async () => {
+    if (!selected?.user?.publicId) return
+    if (targetValue !== '' && (Number(targetValue) < 3 || Number(targetValue) > 15)) {
+      toast.error('Enter a realistic HbA1c target between 3 and 15')
+      return
+    }
+    setSavingTarget(true)
+    try {
+      const value = targetValue === '' ? null : Number(targetValue)
+      const res = await updatePatientTargetHbA1c(selected.user.publicId, value)
+      setPatients(list => list.map(p => p.id === res.data.id ? res.data : p))
+      setSelected(res.data)
+      setTargetOpen(false)
+      toast.success('Target HbA1c updated')
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Failed to update target HbA1c')
+    } finally {
+      setSavingTarget(false)
+    }
+  }
 
   return (
     <div>
@@ -114,6 +152,9 @@ export default function MyPatients() {
         ]}]}
         footer={
           <>
+            <button style={drawerOutlineBtn()} onClick={() => openTarget(selected)}>
+              <Target size={13} /> Set HbA1c Target
+            </button>
             <button style={drawerPrimaryBtn()} onClick={() => navigate('/doctor/glucose')}>
               <Activity size={13} /> Log Glucose
             </button>
@@ -126,6 +167,25 @@ export default function MyPatients() {
           </>
         }
       />
+
+      <Modal open={targetOpen} onClose={() => setTargetOpen(false)}
+        title="Set Target HbA1c"
+        subtitle={selected?.user?.username}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setTargetOpen(false)}>Cancel</Button>
+            <Button onClick={saveTarget} disabled={savingTarget}>{savingTarget ? 'Saving...' : 'Save Target'}</Button>
+          </>
+        }>
+        <InputField
+          label="Target HbA1c (%)"
+          type="number"
+          step="0.1"
+          placeholder="e.g. 7.0"
+          value={targetValue}
+          onChange={e => setTargetValue(e.target.value)}
+        />
+      </Modal>
     </div>
   )
 }

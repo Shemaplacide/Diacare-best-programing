@@ -3,14 +3,16 @@ services:
     image: postgres:16-alpine
     container_name: diacare-db
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      POSTGRES_DB: diacare
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - diacare-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U diacare -d diacare"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d diacare"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,18 +25,24 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    env_file:
-      - .env
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/diacare
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 1234
+      MAIL_HOST: localhost
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      JWT_SECRET: change-this-secret-for-local-development
+      JWT_EXPIRATION_MS: 86400000
     ports:
-      - "8085:8085"
+      - "8086:8085"
 
   frontend:
     build:
       context: ./DiaCareFrontend
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8085/api/v1}
+        VITE_API_URL: http://localhost:8086/api/v1
     container_name: diacare-frontend
     restart: unless-stopped
     depends_on:

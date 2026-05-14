@@ -16,6 +16,10 @@ import java.util.UUID;
 import com.auca.diacare.patient.dto.PatientDTO;
 import com.auca.diacare.patient.model.Patient;
 import com.auca.diacare.patient.service.PatientService;
+import com.auca.diacare.auth.model.Role;
+import com.auca.diacare.auth.model.User;
+import com.auca.diacare.auth.repository.UserRepository;
+import com.auca.diacare.doctor.repository.DoctorRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,9 +32,13 @@ import jakarta.validation.Valid;
 public class PatientController {
 
     private final PatientService patientService;
+    private final DoctorRepository doctorRepository;
+    private final UserRepository userRepository;
 
-    public PatientController(PatientService patientService) {
+    public PatientController(PatientService patientService, DoctorRepository doctorRepository, UserRepository userRepository) {
         this.patientService = patientService;
+        this.doctorRepository = doctorRepository;
+        this.userRepository = userRepository;
     }
 
     @Operation(summary = "Create patient profile")
@@ -40,7 +48,13 @@ public class PatientController {
         patient.setDiabetesType(dto.getDiabetesType());
         patient.setDateOfBirth(dto.getDateOfBirth());
         patient.setGender(dto.getGender());
-        patient.setTargetHbA1c(dto.getTargetHbA1c());
+        patient.setPhoneNumber(dto.getPhoneNumber());
+        patient.setHasAllergies(Boolean.TRUE.equals(dto.getHasAllergies()));
+        patient.setAllergyDetails(Boolean.TRUE.equals(dto.getHasAllergies()) ? dto.getAllergyDetails() : null);
+        if (dto.getPreferredDoctorPublicId() != null) {
+            patient.setPreferredDoctor(doctorRepository.findByUser_PublicId(dto.getPreferredDoctorPublicId())
+                    .orElseThrow(() -> new RuntimeException("Preferred doctor not found")));
+        }
         // user will be set in the service layer after fetching the authenticated user
         // details
         Patient registeredPatient = patientService.registerPatient(patient);
@@ -72,6 +86,48 @@ public class PatientController {
     }
 
     @Operation(summary = "Update patient profile")
+    @PutMapping("/me")
+    public ResponseEntity<Patient> updateMyProfile(Authentication authentication,
+            @Valid @RequestBody PatientDTO dto) {
+        Patient patient = patientService.getPatientByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Patient profile not found"));
+        Patient patientDetails = new Patient();
+        patientDetails.setDiabetesType(dto.getDiabetesType());
+        patientDetails.setDateOfBirth(dto.getDateOfBirth());
+        patientDetails.setGender(dto.getGender());
+        patientDetails.setPhoneNumber(dto.getPhoneNumber());
+        patientDetails.setHasAllergies(dto.getHasAllergies());
+        patientDetails.setAllergyDetails(dto.getAllergyDetails());
+        if (dto.getPreferredDoctorPublicId() != null) {
+            patientDetails.setPreferredDoctor(doctorRepository.findByUser_PublicId(dto.getPreferredDoctorPublicId())
+                    .orElseThrow(() -> new RuntimeException("Preferred doctor not found")));
+        }
+        Patient updatedPatient = patientService.updatePatientProfile(patient.getUser().getPublicId(), patientDetails);
+        return ResponseEntity.ok(updatedPatient);
+    }
+
+    @Operation(summary = "Set patient target HbA1c", description = "Doctor/admin only. Patients can view this target but cannot set it.")
+    @PutMapping("/{publicId}/target-hba1c")
+    public ResponseEntity<Patient> updateTargetHbA1c(@PathVariable UUID publicId,
+            @RequestBody java.util.Map<String, Object> body,
+            Authentication authentication) {
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (currentUser.getRole() == Role.PATIENT) {
+            throw new RuntimeException("Only a doctor or admin can set the target HbA1c");
+        }
+        Patient patient = patientService.getPatientByPublicId(publicId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+        Object value = body.get("targetHbA1c");
+        if (value == null || value.toString().isBlank()) {
+            patient.setTargetHbA1c(null);
+        } else {
+            patient.setTargetHbA1c(Double.valueOf(value.toString()));
+        }
+        return ResponseEntity.ok(patientService.savePatient(patient));
+    }
+
+    @Operation(summary = "Update patient profile by public ID")
     @PutMapping("/{publicId}")
     public ResponseEntity<Patient> updatePatientProfile(@PathVariable UUID publicId,
             @Valid @RequestBody PatientDTO dto) {
@@ -79,7 +135,13 @@ public class PatientController {
         patientDetails.setDiabetesType(dto.getDiabetesType());
         patientDetails.setDateOfBirth(dto.getDateOfBirth());
         patientDetails.setGender(dto.getGender());
-        patientDetails.setTargetHbA1c(dto.getTargetHbA1c());
+        patientDetails.setPhoneNumber(dto.getPhoneNumber());
+        patientDetails.setHasAllergies(dto.getHasAllergies());
+        patientDetails.setAllergyDetails(dto.getAllergyDetails());
+        if (dto.getPreferredDoctorPublicId() != null) {
+            patientDetails.setPreferredDoctor(doctorRepository.findByUser_PublicId(dto.getPreferredDoctorPublicId())
+                    .orElseThrow(() -> new RuntimeException("Preferred doctor not found")));
+        }
         Patient updatedPatient = patientService.updatePatientProfile(publicId, patientDetails);
         return ResponseEntity.ok(updatedPatient);
     }

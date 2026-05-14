@@ -53,7 +53,20 @@ public class PatientServiceImpl implements PatientService {
             patient.setGender(patientDetails.getGender());
         if (patientDetails.getTargetHbA1c() != null)
             patient.setTargetHbA1c(patientDetails.getTargetHbA1c());
+        if (patientDetails.getPhoneNumber() != null)
+            patient.setPhoneNumber(patientDetails.getPhoneNumber());
+        if (patientDetails.getHasAllergies() != null)
+            patient.setHasAllergies(patientDetails.getHasAllergies());
+        if (patientDetails.getAllergyDetails() != null || Boolean.FALSE.equals(patientDetails.getHasAllergies()))
+            patient.setAllergyDetails(patientDetails.getAllergyDetails());
+        if (patientDetails.getPreferredDoctor() != null)
+            patient.setPreferredDoctor(patientDetails.getPreferredDoctor());
 
+        return patientRepository.save(patient);
+    }
+
+    @Override
+    public Patient savePatient(Patient patient) {
         return patientRepository.save(patient);
     }
 

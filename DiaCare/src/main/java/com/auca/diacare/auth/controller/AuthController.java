@@ -32,16 +32,19 @@ public class AuthController {
         this.jwtUtil = jwtUtil;
     }
 
-    @Operation(summary = "Register a new user", description = "Creates a new user account. Role defaults to PATIENT; set is_doctor=true for DOCTOR.")
+    @Operation(summary = "Register a patient", description = "Public registration only creates PATIENT accounts. Doctor and admin accounts must be created by an admin.")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        request.setRole(com.auca.diacare.auth.model.Role.PATIENT);
+        request.setIs_doctor(false);
         return ResponseEntity.ok(authService.register(request));
     }
 
     @Operation(summary = "Login", description = "Authenticate with email and password. Returns a JWT token.")
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request,
+            @RequestHeader(value = "User-Agent", defaultValue = "Unknown") String userAgent) {
+        return ResponseEntity.ok(authService.login(request, userAgent));
     }
 
     @Operation(summary = "Get current user", description = "Returns the authenticated user's profile from the JWT token.")
@@ -87,7 +90,11 @@ public class AuthController {
 
     @Operation(summary = "Logout", description = "Clears the server-side session (client should also clear tokens).")
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout() {
+    public ResponseEntity<Map<String, String>> logout(Authentication authentication,
+            @RequestHeader(value = "User-Agent", defaultValue = "Unknown") String userAgent) {
+        if (authentication != null) {
+            authService.logout(authentication.getName(), userAgent);
+        }
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 

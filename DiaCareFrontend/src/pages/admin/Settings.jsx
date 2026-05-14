@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { User, Lock, Bell, Shield, ChevronRight, Camera } from 'lucide-react'
 import { toast } from 'react-toastify'
 import InputField from '../../components/ui/InputField'
 import Button from '../../components/ui/Button'
 import { authStore } from '../../store/authStore'
+import { getMe, updateMe, getAdminProfile, updateAdminProfile } from '../../api/profile'
+import { getDoctorProfile, updateDoctorProfile } from '../../api/doctorApi'
 
 const SECTIONS = [
   { key: 'profile',       label: 'Profile',        icon: <User size={16} /> },
@@ -59,6 +61,10 @@ export default function Settings() {
 
 // ── Profile ────────────────────────────────────────────────────────────────
 function ProfileSection({ user }) {
+  const role = user?.role
+  const isAdmin = role === 'ADMIN'
+  const isDoctor = role === 'DOCTOR'
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     name:           user?.name           ?? '',
     email:          user?.email          ?? '',
@@ -67,11 +73,62 @@ function ProfileSection({ user }) {
     hospital:       user?.hospital       ?? '',
     licenseNumber:  user?.licenseNumber  ?? '',
   })
+
+  useEffect(() => {
+    getMe().then(r => {
+      setForm(p => ({ ...p, name: r.data.name ?? '', email: r.data.email ?? '' }))
+    }).catch(() => {})
+
+    if (isDoctor) {
+      getDoctorProfile().then(r => {
+        setForm(p => ({
+          ...p,
+          specialization: r.data.specialization ?? '',
+          licenseNumber: r.data.licenseNumber ?? '',
+        }))
+      }).catch(() => {})
+    }
+
+    if (isAdmin) {
+      getAdminProfile().then(r => {
+        setForm(p => ({ ...p, hospital: r.data.department ?? '' }))
+      }).catch(() => {})
+    }
+  }, [isAdmin, isDoctor])
+
   const handle = (f) => (e) => setForm(p => ({ ...p, [f]: e.target.value }))
   const initials = form.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
 
+  const save = async () => {
+    setSaving(true)
+    try {
+      if (role === 'DOCTOR') {
+        await updateDoctorProfile({
+          specialization: form.specialization,
+          licenseNumber: form.licenseNumber,
+        })
+      }
+
+      if (role === 'ADMIN') {
+        await updateAdminProfile({ department: form.hospital || 'Administration' })
+      }
+
+      const updatedUser = await updateMe({ name: form.name, email: form.email })
+      authStore.setUser({ ...authStore.getUser(), name: updatedUser.data.name, email: updatedUser.data.email })
+
+      toast.success('Profile updated successfully')
+    } catch (err) {
+      toast.error(err.response?.data?.message ?? 'Failed to update profile')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <Card title="Profile Information" subtitle="Update your personal and professional details">
+    <Card
+      title="Profile Information"
+      subtitle={isAdmin ? 'Update your admin account details' : 'Update your personal and professional details'}
+    >
       {/* Avatar */}
       <div className="flex items-center gap-4 mb-6 pb-6 border-b border-[#E2E8F0]">
         <div className="relative">
@@ -84,21 +141,30 @@ function ProfileSection({ user }) {
         </div>
         <div>
           <p className="m-0 font-semibold text-[#1E293B]">{form.name || 'Your Name'}</p>
-          <p className="m-0 text-sm text-[#64748B]">{form.specialization || 'Medical Staff'}</p>
+          <p className="m-0 text-sm text-[#64748B]">
+            {isAdmin ? (form.hospital || 'Administration') : (form.specialization || 'Medical Staff')}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-        <InputField label="Full Name"      value={form.name}           onChange={handle('name')}           placeholder="Dr. Jane Smith" />
-        <InputField label="Email"          value={form.email}          onChange={handle('email')}          placeholder="you@diacare.com" type="email" />
-        <InputField label="Phone"          value={form.phone}          onChange={handle('phone')}          placeholder="+250 78 000 0000" />
-        <InputField label="License Number" value={form.licenseNumber}  onChange={handle('licenseNumber')}  placeholder="MD-123456" />
-        <InputField label="Hospital"       value={form.hospital}       onChange={handle('hospital')}       placeholder="Kigali University Hospital" />
-        <InputField label="Specialization" value={form.specialization} onChange={handle('specialization')} placeholder="Endocrinologist" />
+        <InputField label="Full Name" value={form.name} onChange={handle('name')} placeholder={isAdmin ? 'System Admin' : 'Dr. Jane Smith'} />
+        <InputField label="Email" value={form.email} onChange={handle('email')} placeholder="you@diacare.com" type="email" />
+
+        {isAdmin && (
+          <InputField label="Department" value={form.hospital} onChange={handle('hospital')} placeholder="Administration" />
+        )}
+
+        {isDoctor && (
+          <>
+            <InputField label="License Number" value={form.licenseNumber} onChange={handle('licenseNumber')} placeholder="MD-123456" />
+            <InputField label="Specialization" value={form.specialization} onChange={handle('specialization')} placeholder="Endocrinologist" />
+          </>
+        )}
       </div>
 
       <div className="flex justify-end mt-2">
-        <Button onClick={() => toast.success('Profile updated successfully')}>Save Changes</Button>
+        <Button onClick={save} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
       </div>
     </Card>
   )

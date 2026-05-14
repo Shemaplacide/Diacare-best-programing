@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -49,7 +50,9 @@ public class HealthMetricsController {
         metrics.setPatient(patient);
         metrics.setWeight(dto.getWeight());
         metrics.setHeight(dto.getHeight());
-        metrics.setHba1c(dto.getHba1c());
+        if (dto.getHba1c() != null) {
+            throw new RuntimeException("HbA1c test results must be recorded by a doctor or admin");
+        }
         metrics.setBloodPressureSystolic(dto.getBloodPressureSystolic());
         metrics.setBloodPressureDiastolic(dto.getBloodPressureDiastolic());
         metrics.setCholesterol(dto.getCholesterol());
@@ -97,6 +100,32 @@ public class HealthMetricsController {
         metrics.setRecordedAt(dto.getRecordedAt());
 
         return ResponseEntity.ok(metricsService.recordMetrics(metrics));
+    }
+
+    @Operation(summary = "Update a metrics record (doctor/admin use)")
+    @PutMapping("/{id}")
+    public ResponseEntity<HealthMetrics> update(
+            @PathVariable Long id,
+            @RequestBody HealthMetricsDTO dto) {
+        return ResponseEntity.ok(metricsService.updateMetrics(id, toMetrics(dto)));
+    }
+
+    @Operation(summary = "Update a metrics record using POST (doctor/admin use)")
+    @PostMapping("/{id}/update")
+    public ResponseEntity<HealthMetrics> updateWithPost(
+            @PathVariable Long id,
+            @RequestBody HealthMetricsDTO dto) {
+        return ResponseEntity.ok(metricsService.updateMetrics(id, toMetrics(dto)));
+    }
+
+    private HealthMetrics toMetrics(HealthMetricsDTO dto) {
+        HealthMetrics metrics = new HealthMetrics();
+        metrics.setWeight(dto.getWeight());
+        metrics.setHeight(dto.getHeight());
+        metrics.setHba1c(dto.getHba1c());
+        metrics.setCholesterol(dto.getCholesterol());
+        metrics.setRecordedAt(dto.getRecordedAt());
+        return metrics;
     }
 
     @Operation(summary = "Get all metrics records (doctor/admin use)")

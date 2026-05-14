@@ -11,5 +11,6 @@ import com.auca.diacare.admin.model.Admin;
 @Repository
 public interface AdminRepository extends JpaRepository<Admin, Long> {
     Optional<Admin> findByUser_PublicId(UUID publicId);
+    Optional<Admin> findByUser_Id(Long userId);
     Optional<Admin> findByUserEmail(String email);
 }

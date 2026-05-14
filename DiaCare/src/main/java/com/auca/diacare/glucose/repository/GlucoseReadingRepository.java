@@ -16,6 +16,7 @@ public interface GlucoseReadingRepository extends JpaRepository<GlucoseReading, 
     List<GlucoseReading> findByPatient_IdOrderByRecordedAtDesc(Long patientId);
 
     List<GlucoseReading> findByPatient_User_EmailOrderByRecordedAtDesc(String email);
+    List<GlucoseReading> findByPatient_User_Email(String email);
 
     List<GlucoseReading> findByPatient_IdAndRecordedAtBetweenOrderByRecordedAtAsc(
             Long patientId, LocalDateTime from, LocalDateTime to);

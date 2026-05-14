@@ -6,6 +6,7 @@ import { StatusBadge, GLUCOSE_STATUS, APPOINTMENT_STATUS } from '../../constants
 import { authStore } from '../../store/authStore'
 import { getDoctorDashboard, getMyAppointments } from '../../api/doctorApi'
 import { toast } from 'react-toastify'
+import { getTimeGreeting } from '../../utils/greeting'
 
 const QUICK_ACTIONS = [
   { label: 'My Patients',   icon: <UserPlus size={18} />,     color: '#0A4174', bg: '#EFF6F8', href: '/doctor/patients'     },
@@ -28,12 +29,12 @@ function GlucoseTooltip({ active, payload, label }) {
 export default function DoctorDashboard() {
   const navigate = useNavigate()
   const user     = authStore.getUser()
-  const hour     = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const greeting = getTimeGreeting()
 
   const [dashboard, setDashboard] = useState(null)
   const [appts,     setAppts]     = useState([])
   const [loading,   setLoading]   = useState(true)
+  const [expandedAlertPatient, setExpandedAlertPatient] = useState(null)
 
   useEffect(() => {
     Promise.all([getDoctorDashboard(), getMyAppointments()])
@@ -49,12 +50,26 @@ export default function DoctorDashboard() {
   const todayAppts = appts.filter(a => a.appointmentDate?.split('T')[0] === today)
   const upcoming   = appts.filter(a => (a.status === 'PENDING' || a.status === 'CONFIRMED') && a.appointmentDate?.split('T')[0] >= today)
   const alerts     = dashboard?.criticalAlerts ?? []
+  const criticalPatientCount = dashboard?.criticalPatientCount ?? new Set(
+    alerts.map(a => a.patientEmail || a.patientName).filter(Boolean)
+  ).size
+  const groupedAlerts = Object.values(alerts.reduce((acc, alert) => {
+    const key = alert.patientEmail || alert.patientName || 'unknown'
+    if (!acc[key]) acc[key] = { key, patientName: alert.patientName, patientEmail: alert.patientEmail, alerts: [] }
+    acc[key].alerts.push(alert)
+    return acc
+  }, {})).map(group => {
+    const sortedAlerts = group.alerts
+      .slice()
+      .sort((a, b) => new Date(b.recordedAt ?? 0) - new Date(a.recordedAt ?? 0))
+    return { ...group, alerts: sortedAlerts, latest: sortedAlerts[0] }
+  }).sort((a, b) => new Date(b.latest?.recordedAt ?? 0) - new Date(a.latest?.recordedAt ?? 0))
 
   const statCards = dashboard ? [
     { label: 'My Patients',      value: dashboard.totalPatients,      icon: <Users size={20} />,        bg: 'linear-gradient(135deg,#0A4174,#49769F)' },
     { label: "Today's Appts",    value: dashboard.todayAppointments,  icon: <Calendar size={20} />,     bg: 'linear-gradient(135deg,#16A34A,#4ade80)' },
     { label: 'Pending',          value: dashboard.pendingAppointments,icon: <Clock size={20} />,        bg: 'linear-gradient(135deg,#D97706,#fbbf24)' },
-    { label: 'Critical Alerts',  value: alerts.length,                icon: <AlertTriangle size={20} />,bg: 'linear-gradient(135deg,#DC2626,#f87171)' },
+    { label: 'Critical Alerts',  value: criticalPatientCount,         icon: <AlertTriangle size={20} />,bg: 'linear-gradient(135deg,#DC2626,#f87171)' },
   ] : []
 
   return (
@@ -70,10 +85,10 @@ export default function DoctorDashboard() {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        {alerts.length > 0 && (
+        {criticalPatientCount > 0 && (
           <div className="flex items-center gap-2 bg-[#FFF1F0] border border-[#DC2626]/20 text-[#DC2626] px-4 py-2 rounded-xl text-sm font-semibold">
             <AlertTriangle size={15} />
-            {alerts.length} patient{alerts.length > 1 ? 's' : ''} need attention
+            {criticalPatientCount} patient{criticalPatientCount > 1 ? 's' : ''} need attention
           </div>
         )}
       </div>
@@ -121,28 +136,58 @@ export default function DoctorDashboard() {
       </div>
 
       {/* Critical alerts */}
-      {alerts.length > 0 && (
+      {groupedAlerts.length > 0 && (
         <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden">
           <div className="px-5 py-4 border-b border-[#E2E8F0] flex items-center gap-2">
             <AlertTriangle size={16} className="text-[#DC2626]" />
             <p className="m-0 font-bold text-[#1E293B]">Critical Glucose Alerts</p>
           </div>
           <div className="flex flex-col divide-y divide-[#E2E8F0]">
-            {alerts.map((a, i) => (
-              <div key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-[#F8FAFB] transition">
-                <div className="w-9 h-9 rounded-full bg-[#FFF1F0] flex items-center justify-center text-xs font-bold text-[#DC2626] shrink-0">
-                  {a.patientName?.split(' ').map(w => w[0]).join('').slice(0, 2)}
+            {groupedAlerts.map(group => {
+              const a = group.latest
+              const isExpanded = expandedAlertPatient === group.key
+              return (
+                <div key={group.key}>
+                  <button
+                    onClick={() => setExpandedAlertPatient(isExpanded ? null : group.key)}
+                    className="w-full flex items-center gap-3 px-5 py-3 hover:bg-[#F8FAFB] transition bg-transparent border-0 text-left cursor-pointer"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#FFF1F0] flex items-center justify-center text-xs font-bold text-[#DC2626] shrink-0">
+                      {group.patientName?.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="m-0 text-sm font-semibold text-[#1E293B]">{group.patientName}</p>
+                      <p className="m-0 text-xs text-[#64748B]">
+                        Latest: {a.recordedAt?.slice(0, 16)}
+                        {group.alerts.length > 1 ? ` · ${group.alerts.length} critical readings` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="m-0 font-mono font-bold text-[#DC2626]">{a.glucoseValue ?? a.value} {a.unit}</p>
+                      <p className="m-0 text-xs text-[#DC2626]">{a.level ?? a.alertType}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-[#0A4174] shrink-0">
+                      {isExpanded ? 'Hide' : 'View'}
+                    </span>
+                  </button>
+
+                  {isExpanded && group.alerts.length > 1 && (
+                    <div className="bg-[#FFF8F8] px-5 py-3 border-t border-[#FEE2E2]">
+                      <p className="m-0 mb-2 text-xs font-bold text-[#991B1B] uppercase tracking-wide">All critical readings</p>
+                      <div className="grid gap-2">
+                        {group.alerts.map((alert, i) => (
+                          <div key={`${group.key}-${alert.recordedAt ?? i}`} className="flex items-center justify-between rounded-xl bg-white border border-[#FEE2E2] px-3 py-2">
+                            <span className="text-xs text-[#64748B]">{alert.recordedAt?.slice(0, 16)}</span>
+                            <span className="text-sm font-mono font-bold text-[#DC2626]">{alert.glucoseValue ?? alert.value} {alert.unit}</span>
+                            <span className="text-xs font-semibold text-[#DC2626]">{alert.level ?? alert.alertType}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="m-0 text-sm font-semibold text-[#1E293B]">{a.patientName}</p>
-                  <p className="m-0 text-xs text-[#64748B]">{a.recordedAt?.slice(0, 16)}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="m-0 font-mono font-bold text-[#DC2626]">{a.value} {a.unit}</p>
-                  <p className="m-0 text-xs text-[#DC2626]">{a.alertType}</p>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

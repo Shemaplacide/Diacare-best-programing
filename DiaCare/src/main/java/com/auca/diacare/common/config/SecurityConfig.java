@@ -4,6 +4,7 @@ import com.auca.diacare.auth.repository.UserRepository;
 import com.auca.diacare.common.security.JwtAuthFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,6 +29,10 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final List<String> ALLOWED_ORIGINS = List.of(
+            "http://localhost:5173",
+            "http://localhost:5174");
+
     private final JwtAuthFilter jwtAuthFilter;
     private final UserRepository userRepository;
 
@@ -40,7 +45,7 @@ public class SecurityConfig {
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        config.setAllowedOrigins(ALLOWED_ORIGINS);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
         config.setMaxAge(3600L);
@@ -84,7 +89,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowCredentials(true);
-                    config.setAllowedOrigins(List.of("http://localhost:5173"));
+                    config.setAllowedOrigins(ALLOWED_ORIGINS);
                     config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                     config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
                     config.setMaxAge(3600L);
@@ -93,8 +98,15 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
-                                "/api/v1/auth/**",
+                                "/api/v1/auth/register",
+                                "/api/v1/auth/login",
+                                "/api/v1/auth/refresh",
+                                "/api/v1/auth/forgot-password",
+                                "/api/v1/auth/reset-password",
+                                "/api/v1/auth/seed-status",
+                                "/api/v1/doctors/all",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -103,6 +115,10 @@ public class SecurityConfig {
                                 "/error")
                         .permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/doctors/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/doctors/me").hasRole("DOCTOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/doctors/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/doctors/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
                         .requestMatchers("/api/v1/patients/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")
                         .requestMatchers("/api/v1/appointments/**").hasAnyRole("PATIENT", "DOCTOR", "ADMIN")

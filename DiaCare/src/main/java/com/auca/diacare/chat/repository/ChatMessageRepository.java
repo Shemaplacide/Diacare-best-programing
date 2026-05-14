@@ -12,6 +12,8 @@ import com.auca.diacare.chat.model.ChatMessage;
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
     List<ChatMessage> findByConversation_IdOrderBySentAtAsc(Long conversationId);
+    List<ChatMessage> findByConversation_Id(Long conversationId);
+    List<ChatMessage> findBySender_Email(String email);
 
     // Unread messages in a conversation not sent by the reader
     long countByConversation_IdAndIsReadFalseAndSender_EmailNot(Long conversationId, String senderEmail);

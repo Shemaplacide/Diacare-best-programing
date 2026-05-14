@@ -6,9 +6,11 @@ import AuthLayout from './AuthLayout'
 import InputField from '../../components/ui/InputField'
 import Button from '../../components/ui/Button'
 import SocialButton from '../../components/ui/SocialButton'
+import RoleChoice from '../../components/auth/RoleChoice'
 import { login } from '../../api/auth'
 import { authStore } from '../../store/authStore'
 import { validateLogin } from '../../utils/validate'
+import { getTimeGreeting } from '../../utils/greeting'
 
 const MAX_ATTEMPTS = 5
 const LOCKOUT_MS   = 60 * 1000
@@ -19,6 +21,7 @@ export default function Login() {
   const [errors, setErrors]   = useState({})
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
+  const [role, setRole]       = useState('PATIENT')
   const attempts = useRef(0)
   const lockedAt = useRef(null)
 
@@ -47,14 +50,17 @@ export default function Login() {
       authStore.setUser(data.user)
       attempts.current = 0
       lockedAt.current = null
-      toast.success(`Welcome back, ${data.user?.name ?? 'there'}`)
+      if (data.user?.role !== role) {
+        toast.info(`Signed in as ${data.user?.role?.toLowerCase()}. Redirecting to your portal.`)
+      }
+      toast.success(`${getTimeGreeting()}, ${data.user?.name ?? 'there'}`)
       navigate(authStore.getHomePath())
     } catch (err) {
       // DEV fallback: only when backend is unreachable (no response)
       if (import.meta.env.DEV && !err.response) {
         const mockRole = form.email.includes('doctor') ? 'DOCTOR'
           : form.email.includes('admin') ? 'ADMIN'
-          : 'PATIENT'
+          : role
         authStore.setToken('dev-token')
         authStore.setUser({ name: mockRole === 'DOCTOR' ? 'Dr. Amara Diallo' : mockRole === 'ADMIN' ? 'Admin User' : 'Jean Baptiste', role: mockRole })
         toast.success(`Signed in as ${mockRole} (dev mode — backend unreachable)`)
@@ -84,12 +90,15 @@ export default function Login() {
     <AuthLayout>
       <form onSubmit={handleSubmit} className="w-full max-w-sm flex flex-col">
         <h2 className="text-3xl font-bold tracking-tight text-[#1E293B] mb-1">Welcome back</h2>
-        <p className="text-sm text-[#64748B] mb-7">Sign in to your DiaCare account</p>
+        <p className="text-sm text-[#64748B] mb-5">Sign in to your DiaCare account</p>
+
+        <p className="m-0 text-xs font-semibold text-[#1E293B] mb-2">Choose account type</p>
+        <RoleChoice value={role} onChange={setRole} className="mb-5" />
 
         <InputField
-          label="Email"
-          type="email"
-          placeholder="doctor@diacare.com"
+          label="Email or Username"
+          type="text"
+          placeholder="admin@diacare.com or admin"
           value={form.email}
           onChange={handle('email')}
           autoComplete="email"
@@ -142,11 +151,17 @@ export default function Login() {
         </div>
 
         <p className="text-sm text-center text-[#64748B] mt-6">
-          Don't have an account?{' '}
-          <button type="button" onClick={() => navigate('/register')}
-            className="text-[#0A4174] font-semibold hover:underline cursor-pointer bg-transparent border-0">
-            Sign up
-          </button>
+          {role === 'PATIENT' ? (
+            <>
+              Don't have an account?{' '}
+              <button type="button" onClick={() => navigate('/register')}
+                className="text-[#0A4174] font-semibold hover:underline cursor-pointer bg-transparent border-0">
+                Sign up
+              </button>
+            </>
+          ) : (
+            'Doctor and admin accounts are created by an administrator.'
+          )}
         </p>
       </form>
     </AuthLayout>

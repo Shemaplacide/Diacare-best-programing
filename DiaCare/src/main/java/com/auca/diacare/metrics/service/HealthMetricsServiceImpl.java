@@ -49,6 +49,22 @@ public class HealthMetricsServiceImpl implements HealthMetricsService {
     }
 
     @Override
+    public HealthMetrics updateMetrics(Long id, HealthMetrics metrics) {
+        HealthMetrics existing = metricsRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Metrics record not found"));
+
+        existing.setWeight(metrics.getWeight());
+        existing.setHeight(metrics.getHeight());
+        existing.setHba1c(metrics.getHba1c());
+        existing.setCholesterol(metrics.getCholesterol());
+        if (metrics.getRecordedAt() != null) {
+            existing.setRecordedAt(metrics.getRecordedAt());
+        }
+
+        return metricsRepository.save(existing);
+    }
+
+    @Override
     public Optional<HealthMetrics> getLatest(String email) {
         return metricsRepository.findFirstByPatient_User_EmailOrderByRecordedAtDesc(email);
     }
