@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button'
 import SocialButton from '../../components/ui/SocialButton'
 import RoleChoice from '../../components/auth/RoleChoice'
 import { login } from '../../api/auth'
+import { isServerUnavailable } from '../../api/axios'
 import { authStore } from '../../store/authStore'
 import { validateLogin } from '../../utils/validate'
 import { getTimeGreeting } from '../../utils/greeting'
@@ -66,6 +67,11 @@ export default function Login() {
         toast.success(`Signed in as ${mockRole} (dev mode — backend unreachable)`)
         navigate(authStore.getHomePath())
         setLoading(false)
+        return
+      }
+      // Server asleep or unreachable: keep the form and do not count it as a failed sign-in
+      if (isServerUnavailable(err)) {
+        toast.error('We could not reach the server. It may still be starting — your details are kept, so please try again in a moment.')
         return
       }
       attempts.current += 1

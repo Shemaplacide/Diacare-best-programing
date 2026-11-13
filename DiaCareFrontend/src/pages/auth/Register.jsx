@@ -7,6 +7,7 @@ import InputField from '../../components/ui/InputField'
 import Button from '../../components/ui/Button'
 import SocialButton from '../../components/ui/SocialButton'
 import { register } from '../../api/auth'
+import { isServerUnavailable } from '../../api/axios'
 import { getAllDoctors } from '../../api/doctor'
 import { authStore } from '../../store/authStore'
 import { validateRegister } from '../../utils/validate'
@@ -90,6 +91,11 @@ export default function Register() {
       toast.success('Account created successfully')
       navigate(authStore.getHomePath())
     } catch (err) {
+      // Server asleep or unreachable: keep the form and do not count it as a failed attempt
+      if (isServerUnavailable(err)) {
+        toast.error('We could not reach the server. It may still be starting — your details are kept, so please try again in a moment.')
+        return
+      }
       attempts.current += 1
       if (attempts.current >= MAX_ATTEMPTS) {
         lockedAt.current = Date.now()

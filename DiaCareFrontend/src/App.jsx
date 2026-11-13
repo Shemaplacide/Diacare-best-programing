@@ -3,6 +3,8 @@ import { ToastContainer } from 'react-toastify'
 import { useState, useEffect } from 'react'
 import 'react-toastify/dist/ReactToastify.css'
 import PageLoader from './components/ui/PageLoader'
+import ServerWakeNotice from './components/ui/ServerWakeNotice'
+import { warmUpApi } from './api/axios'
 
 import AuthGuard    from './gaurd/AuthGuard'
 import LandingPage  from './pages/LandingPage'
@@ -50,6 +52,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    warmUpApi()
     const t = setTimeout(() => setLoading(false), 1800)
     return () => clearTimeout(t)
   }, [])
@@ -107,6 +110,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ServerWakeNotice />
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} closeOnClick pauseOnHover />
     </BrowserRouter>
   )
