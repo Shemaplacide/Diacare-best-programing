@@ -102,6 +102,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
                                 "/api/v1/auth/seed-status",
+                                "/api/v1/health",
                                 "/api/v1/doctors/all",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",
