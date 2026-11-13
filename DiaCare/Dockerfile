@@ -14,6 +14,10 @@ WORKDIR /app
 
 COPY --from=build /app/target/app.jar app.jar
 
+# Fit the JVM in a 512 MB instance (Render Free). Override JAVA_TOOL_OPTIONS for larger hosts.
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70 -XX:+UseSerialGC -Xss512k -XX:TieredStopAtLevel=1"
+
+# The app listens on $PORT when the host provides it, otherwise on 8085.
 EXPOSE 8085
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
