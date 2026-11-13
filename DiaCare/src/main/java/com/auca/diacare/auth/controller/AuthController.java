@@ -18,7 +18,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
 @Tag(name = "Authentication", description = "Register and login to obtain a JWT token")
 public class AuthController {
 

@@ -1,6 +1,7 @@
 package com.auca.diacare.common.config;
 
 import com.auca.diacare.common.util.JwtUtil;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -28,9 +29,16 @@ import java.util.Map;
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtUtil jwtUtil;
+    private final String[] allowedOrigins;
 
-    public WebSocketConfig(JwtUtil jwtUtil) {
+    public WebSocketConfig(JwtUtil jwtUtil,
+                           @Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
         this.jwtUtil = jwtUtil;
+        this.allowedOrigins = allowedOrigins.stream()
+                .map(String::trim)
+                .map(origin -> origin.endsWith("/") ? origin.substring(0, origin.length() - 1) : origin)
+                .filter(origin -> !origin.isEmpty())
+                .toArray(String[]::new);
     }
 
     @Override
@@ -43,7 +51,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")
+                .setAllowedOrigins(allowedOrigins)
                 .addInterceptors(new HandshakeInterceptor() {
                     @Override
                     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
