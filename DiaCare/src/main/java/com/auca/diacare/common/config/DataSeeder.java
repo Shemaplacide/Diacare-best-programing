@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,23 @@ import com.auca.diacare.prescription.repository.PrescriptionRepository;
 
 @Component
 public class DataSeeder implements CommandLineRunner {
+
+    private static final String DEFAULT_ADMIN_PASSWORD = "Admin@123";
+    private static final String DEFAULT_DOCTOR_PASSWORD = "Doctor@123";
+    private static final String DEFAULT_PATIENT_PASSWORD = "Patient@123";
+
+    // Hosted demos set their own passwords so the ones published in this repository do not work there.
+    @Value("${app.demo.seed-enabled:true}")
+    private boolean seedEnabled;
+
+    @Value("${app.demo.admin-password:" + DEFAULT_ADMIN_PASSWORD + "}")
+    private String adminPassword;
+
+    @Value("${app.demo.doctor-password:" + DEFAULT_DOCTOR_PASSWORD + "}")
+    private String doctorPassword;
+
+    @Value("${app.demo.patient-password:" + DEFAULT_PATIENT_PASSWORD + "}")
+    private String patientPassword;
 
     private final UserRepository userRepository;
     private final PatientRepository patientRepository;
@@ -60,16 +78,16 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.count() > 0) return;
+        if (!seedEnabled || userRepository.count() > 0) return;
 
         System.out.println(">>> Seeding DiaCare database...");
 
         // ── Users ──────────────────────────────────────────────────────────────
-        User adminUser   = userRepository.save(new User("admin",         "admin@diacare.com",  passwordEncoder.encode("Admin@123"),   Role.ADMIN));
-        User doctorUser  = userRepository.save(new User("dr.mugisha",    "mugisha@diacare.com", passwordEncoder.encode("Doctor@123"), Role.DOCTOR));
-        User doctorUser2 = userRepository.save(new User("dr.uwimana",    "uwimana@diacare.com", passwordEncoder.encode("Doctor@123"), Role.DOCTOR));
-        User patientUser = userRepository.save(new User("jean.baptiste", "jean@diacare.com",    passwordEncoder.encode("Patient@123"), Role.PATIENT));
-        User patientUser2= userRepository.save(new User("alice.mutoni",  "alice@diacare.com",   passwordEncoder.encode("Patient@123"), Role.PATIENT));
+        User adminUser   = userRepository.save(new User("admin",         "admin@diacare.com",  passwordEncoder.encode(adminPassword),   Role.ADMIN));
+        User doctorUser  = userRepository.save(new User("dr.mugisha",    "mugisha@diacare.com", passwordEncoder.encode(doctorPassword), Role.DOCTOR));
+        User doctorUser2 = userRepository.save(new User("dr.uwimana",    "uwimana@diacare.com", passwordEncoder.encode(doctorPassword), Role.DOCTOR));
+        User patientUser = userRepository.save(new User("jean.baptiste", "jean@diacare.com",    passwordEncoder.encode(patientPassword), Role.PATIENT));
+        User patientUser2= userRepository.save(new User("alice.mutoni",  "alice@diacare.com",   passwordEncoder.encode(patientPassword), Role.PATIENT));
 
         // ── Doctor Profiles ────────────────────────────────────────────────────
         Doctor doctor1 = new Doctor();
@@ -313,11 +331,21 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         System.out.println(">>> Seeding complete.");
-        System.out.println(">>> Swagger UI: http://localhost:8085/swagger-ui.html");
+        System.out.println(">>> Swagger UI: /swagger-ui.html");
+        if (!usesDefaultPasswords()) {
+            System.out.println(">>> Demo accounts created with the passwords from the environment.");
+            return;
+        }
         System.out.println(">>> Test credentials:");
         System.out.println("    Admin:   admin@diacare.com   / Admin@123");
         System.out.println("    Doctor:  mugisha@diacare.com / Doctor@123");
         System.out.println("    Patient: jean@diacare.com    / Patient@123");
         System.out.println("    Patient: alice@diacare.com   / Patient@123");
+    }
+
+    private boolean usesDefaultPasswords() {
+        return DEFAULT_ADMIN_PASSWORD.equals(adminPassword)
+                && DEFAULT_DOCTOR_PASSWORD.equals(doctorPassword)
+                && DEFAULT_PATIENT_PASSWORD.equals(patientPassword);
     }
 }
