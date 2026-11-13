@@ -80,9 +80,13 @@ host (the endpoint without `-pooler`). Keep dumps out of Git.
 PGPASSWORD='<neon password>' pg_dump -h <endpoint>.<region>.aws.neon.tech -U <neon role> \
   -d <db> --no-owner --no-privileges -Fc -f diacare-neon.dump
 
-# Restore into a separate local database
+# Restore into a separate local database. Neon's dump carries internal
+# "SET (pg_attver=...)" column options that plain PostgreSQL rejects, so convert
+# the dump to SQL, drop those lines and load it with psql.
 createdb -h localhost -p 5432 -U postgres diacare_restore
-pg_restore -h localhost -p 5432 -U postgres -d diacare_restore --no-owner --no-privileges diacare-neon.dump
+pg_restore --no-owner --no-privileges -f - diacare-neon.dump \
+  | grep -v "SET (pg_attver=" \
+  | psql -h localhost -p 5432 -U postgres -d diacare_restore -v ON_ERROR_STOP=1
 
 # Run the API against the restored copy
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/diacare_restore \
